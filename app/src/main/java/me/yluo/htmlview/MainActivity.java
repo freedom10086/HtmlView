@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.widget.TextView;
 
+import java.io.InputStream;
+
 public class MainActivity extends Activity {
 
     @Override
@@ -44,6 +46,9 @@ public class MainActivity extends Activity {
     //android.text.Html
 
     private void testPull() throws Exception {
-
+        HtmlParser parser = new HtmlParser();
+        InputStream is = getAssets().open("TestHtml.html");
+        parser.setInput(is);
+        parser.parse();
     }
 }

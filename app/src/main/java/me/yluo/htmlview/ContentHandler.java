@@ -12,5 +12,5 @@ public interface ContentHandler {
 
     void endElement(String name);
 
-    void characters(StringBuilder s);
+    void characters(char[] ch, int start, int len);
 }
