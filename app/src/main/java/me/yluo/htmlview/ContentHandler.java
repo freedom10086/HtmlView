@@ -1,16 +1,14 @@
 package me.yluo.htmlview;
 
-import org.xml.sax.Attributes;
-
 public interface ContentHandler {
 
     void startDocument();
 
     void endDocument();
 
-    void startElement(String name, Attributes atts);
+    void startElement(int type, String name, String atts);
 
-    void endElement(String name);
+    void endElement(int type, String name);
 
     void characters(char[] ch, int start, int len);
 }

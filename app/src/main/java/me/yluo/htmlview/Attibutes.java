@@ -6,7 +6,7 @@ import android.graphics.Color;
 public class Attibutes {
     private String href = "";
     private String src = "";
-    private int color = Color.BLACK;
+    private int color = Color.TRANSPARENT;
 
     public Attibutes(String s) {
         paraseAttrs(s);
