@@ -8,7 +8,7 @@ public class HtmlTag {
     /**
      * 内联标签
      */
-    public static final int FONT = 1;//不赞同字体
+    public static final int FONT = 1;//不赞同字体color face size
     public static final int TT = 2;//等宽的文本效果
     public static final int I = 3;//斜体
     public static final int U = 4;//下划线
@@ -21,8 +21,8 @@ public class HtmlTag {
     public static final int KBD = 11;//定义键盘文本
     public static final int Q = 14;//引用
     public static final int MARK = 15;//突出显示部分文本
-    public static final int A = 16;
-    public static final int IMG = 17;
+    public static final int A = 16; //href
+    public static final int IMG = 17; //src
     public static final int BR = 18;
     public static final int SUB = 19;
     public static final int SUP = 20;
@@ -30,6 +30,7 @@ public class HtmlTag {
     public static final int DEL = 22;//删除线
     public static final int S = 23;//不赞同删除线
     public static final int STRIKE = 24;//不赞同删除线DEL替代
+    public static final int SPAN = 25;
 
     /**
      * 块标签
@@ -63,8 +64,8 @@ public class HtmlTag {
     public static final int TH = 87;
     public static final int TD = 88;
 
-    public static final int VEDIO = 91;
-    public static final int AUDIO = 92;
+    public static final int VEDIO = 91; //src
+    public static final int AUDIO = 92; //src
 
     public static boolean isBolckTag(int i) {
         return i >= 50;

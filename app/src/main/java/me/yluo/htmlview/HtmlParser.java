@@ -31,11 +31,17 @@ public class HtmlParser {
     private char readItem = EOF, lastRead = EOF;
     private ContentHandler handler;
 
-    public HtmlParser(ContentHandler handler) {
+    public HtmlParser() {
+    }
+
+    public void setHandler(ContentHandler handler) {
         this.handler = handler;
     }
 
     public void parase(InputStream is) throws IOException {
+        if (handler == null) {
+            throw new NullPointerException("you must set ContentHandler");
+        }
         int len = is.available();
         len = len < 1024 ? 1024 : (len < 4096 ? 4096 : 8192);
         srcBuf = new char[len];
@@ -465,6 +471,11 @@ public class HtmlParser {
                             return HtmlTag.FONT;
                         }
                         break;
+                    case 's':
+                        if (buf[1] == 'p' && buf[2] == 'a' && buf[3] == 'n') {
+                            return HtmlTag.SPAN;
+                        }
+                        break;
                     case 'm':
                         if (buf[1] == 'a' && buf[2] == 'r' && buf[3] == 'k') {
                             return HtmlTag.MARK;
@@ -531,7 +542,6 @@ public class HtmlParser {
                 break;
             default:
                 return HtmlTag.UNKNOWN;
-
         }
 
         return HtmlTag.UNKNOWN;

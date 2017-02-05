@@ -5,8 +5,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
 
-import java.io.InputStream;
-
 public class MainActivity extends Activity implements ContentHandler {
 
     @Override
@@ -16,40 +14,17 @@ public class MainActivity extends Activity implements ContentHandler {
 
         TextView t = (TextView) findViewById(R.id.text);
 
-        try {
-            testPull();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        /*
-        try {
-            //TestHtml.html TestXml.xml
-            InputStream in = getAssets().open("TestHtml.html");
-            int size = in.available();
-
-            // Read the entire asset into a local byte buffer.
-            byte[] buffer = new byte[size];
-            in.read(buffer);
-            in.close();
-
-            // Convert the buffer into a string.
-            String text = new String(buffer);
-
-            t.setText(Html.fromHtml(text));
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        */
     }
+
+
+
 
     //android.text.Html
 
     private void testPull() throws Exception {
-        HtmlParser parser = new HtmlParser(this);
-        InputStream is = getAssets().open("TestHtml.html");
-        parser.parase(is);
+        //HtmlParser parser = new HtmlParser(this);
+        //InputStream is = getAssets().open("TestHtml.html");
+        //parser.parase(is);
     }
 
     @Override

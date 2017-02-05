@@ -4,13 +4,6 @@ import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.Spanned;
 
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
 
 public class Html {
     private Html() {
@@ -22,13 +15,12 @@ public class Html {
      * setBounds() on your Drawable if it doesn't already have
      * its bounds set.
      */
-    public static interface ImageGetter {
+    public interface ImageGetter {
         Drawable getDrawable(String source);
     }
 
-    public static interface TagHandler {
-        void handleTag(boolean opening, String tag,
-                       Editable output, XMLReader xmlReader);
+    public interface TagHandler {
+        void handleTag(boolean opening, String tag, Editable output);
     }
 
     /**
@@ -39,19 +31,9 @@ public class Html {
     }
 
     public static Spanned fromHtml(String source, ImageGetter imageGetter, TagHandler tagHandler) {
-        XMLReader xmlReader = null;
-        SAXParserFactory factory = SAXParserFactory.newInstance();
-        try {
-            SAXParser parser = factory.newSAXParser();
-            //parser.setProperty();//parser.setProperty(, HtmlParser.schema);
-            //获取事件源
-            xmlReader = parser.getXMLReader();
-        } catch (ParserConfigurationException | SAXException e) {
-            throw new RuntimeException(e);
-        }
-
-        ToSpannedConverter converter =
-                new ToSpannedConverter(source, imageGetter, tagHandler, xmlReader);
+        HtmlParser parser = new HtmlParser();
+        SpanConverter converter =
+                new SpanConverter(source, imageGetter, tagHandler, parser);
         return converter.convert();
     }
 }
