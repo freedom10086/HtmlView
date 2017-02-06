@@ -43,7 +43,7 @@ public class HtmlParser {
             throw new NullPointerException("you must set ContentHandler");
         }
         int len = is.available();
-        len = len < 1024 ? 1024 : (len < 4096 ? 4096 : 8192);
+        len = len < 1024 ? 1024 : (len < 4096 ? 4096 : 6114);
         srcBuf = new char[len];
         buf = new char[(len >= 4096) ? 2048 : 1024];
         this.reader = new InputStreamReader(is, "UTF-8");
@@ -57,11 +57,11 @@ public class HtmlParser {
             throw new NullPointerException("input cant be null");
         }
         srcBuf = s.toCharArray();
+        srcPos = 0;
+        srcCount = srcBuf.length;
         int len = srcBuf.length;
         len = len < 2048 ? 1024 : 2048;
         buf = new char[len];
-        srcPos = 0;
-        srcCount = 0;
         parse();
     }
 
@@ -71,7 +71,7 @@ public class HtmlParser {
         if (handler == null) {
             return;
         } else {
-            handler.startDocument();
+            handler.startDocument(srcBuf.length);
         }
 
         read();
@@ -169,7 +169,8 @@ public class HtmlParser {
         }
 
         if (handler != null) {
-            handler.startElement(type, name, sttrs);
+            // TODO: 2017/2/6  
+            handler.startElement(name, new HtmlNode(type));
         }
     }
 
@@ -411,32 +412,24 @@ public class HtmlParser {
                         }
                         break;
                     case 'd':
-                        if (buf[1] == 'e') {
-                            if (buf[2] == 'l') {
-                                return HtmlTag.DEL;
-                            }
-                        } else if (buf[1] == 'i') {
-                            if (buf[2] == 'v') {
-                                return HtmlTag.DIV;
-                            }
+                        if (buf[1] == 'e' && buf[2] == 'l') {
+                            return HtmlTag.DEL;
+                        } else if (buf[1] == 'f' && buf[2] == 'n') {
+                            return HtmlTag.DFN;
+                        } else if (buf[1] == 'i' && buf[2] == 'v') {
+                            return HtmlTag.DIV;
                         }
                         break;
                     case 'i':
-                        if (buf[1] == 'm') {
-                            if (buf[2] == 'g') {
-                                return HtmlTag.IMG;
-                            }
-                        } else if (buf[1] == 'n') {
-                            if (buf[2] == 's') {
-                                return HtmlTag.INS;
-                            }
+                        if (buf[1] == 'm' && buf[2] == 'g') {
+                            return HtmlTag.IMG;
+                        } else if (buf[1] == 'n' && buf[2] == 's') {
+                            return HtmlTag.INS;
                         }
                         break;
                     case 'k':
-                        if (buf[1] == 'b') {
-                            if (buf[2] == 'd') {
-                                return HtmlTag.KBD;
-                            }
+                        if (buf[1] == 'b' && buf[2] == 'd') {
+                            return HtmlTag.KBD;
                         }
                         break;
                     case 'p':
@@ -462,7 +455,9 @@ public class HtmlParser {
             case 4:
                 switch (buf[0]) {
                     case 'c':
-                        if (buf[1] == 'o' && buf[2] == 'd' && buf[3] == 'e') {
+                        if (buf[1] == 'i' && buf[2] == 't' && buf[3] == 'e') {
+                            return HtmlTag.CITE;
+                        } else if (buf[1] == 'o' && buf[2] == 'd' && buf[3] == 'e') {
                             return HtmlTag.CODE;
                         }
                         break;

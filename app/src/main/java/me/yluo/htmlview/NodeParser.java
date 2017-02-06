@@ -3,7 +3,7 @@ package me.yluo.htmlview;
 import java.util.Hashtable;
 import java.util.Locale;
 
-public class AttributeParser {
+public class NodeParser {
 
     private static final Hashtable<String, Integer> sColorMap;
     private static final int COLOR_NONE = -1;
@@ -43,11 +43,11 @@ public class AttributeParser {
                 i++;
             }
 
-            if (s.indexOf("right", i) >= 0) {
+            if (s.startsWith("right", i)) {
                 return 2;
-            } else if (s.indexOf("center", i) >= 0) {
+            } else if (s.startsWith("center", i)) {
                 return 1;
-            } else if (s.indexOf("left", i) >= 0) {
+            } else if (s.startsWith("left", i)) {
                 return 0;
             }
         }
@@ -96,7 +96,7 @@ public class AttributeParser {
                         && s.charAt(i) != ';'
                         && s.charAt(i) != ' '
                         && s.charAt(i) != '\n'
-                        && s.charAt(i) != '"') {
+                        && s.charAt(i) != '\"') {
                     i++;
                 }
 
@@ -115,60 +115,30 @@ public class AttributeParser {
     //text-decoration:none underline overline line-through
     //css
     //TextPaint tp = new TextPaint();
-    //tp.setUnderlineText(true);
-    //tp.setStrikeThruText(true);
-    private static int getTextDecoration(int i, String s) {
-        int j = getValidStrPos(s, i, "text-decoration", 20);
+    //tp.setUnderlineText(true);  //1
+    //tp.setStrikeThruText(true); //2
+    //none //0
+    public static int getTextDecoration(int start, String s) {
+        int j = getValidStrPos(s, start, "text-decoration", 20);
         if (j < 0) return -1;
 
-        while (j < s.length() - 4) {
-            if (s.charAt(j) == '=') {
-                while (j < (s.length() - 3) && s.charAt(j) != '\"') {
-                    j++;
-                }
+        while (j < s.length() && (s.charAt(j) < 'a' || s.charAt(j) > 'z')) {
+            j++;
+        }
 
-                if (s.charAt(j) == '\"') {
-                    i = j + 1;
-                    while (i < s.length()
-                            && s.charAt(i) != '\"'
-                            && s.charAt(i) != ' '
-                            && s.charAt(i) != '\n') {
-                        i++;
-                    }
-
-                    return getHtmlColor(j + 1, i, s);
-                }
-
-                return -1;
-            } else if (s.charAt(j) == ':') {
-                j++;
-                while (j < s.length() - 3 && (s.charAt(j) == ' ' || s.charAt(j) == '\n')) {
-                    j++;
-                }
-
-                i = j + 1;
-                while (i < s.length()
-                        && s.charAt(i) != ';'
-                        && s.charAt(i) != ' '
-                        && s.charAt(i) != '\n'
-                        && s.charAt(i) != '"') {
-                    i++;
-                }
-
-                return getHtmlColor(j, i, s);
-            } else {
-                if (s.charAt(j) == '\"') {
-                    return -1;
-                }
-                j++;
-            }
+        if (s.startsWith("underline", j)) {
+            return 1;
+        } else if (s.startsWith("line-through", j)) {
+            return 2;
+        } else if (s.startsWith("none", j)) {
+            return 0;
         }
 
         return -1;
     }
 
 
-    //a="b"
+    //a="b" src="" href=""
     private String getAttrs(String source, int start, String to) {
         if (source.length() - start - 5 < to.length()) return null;
         int j = getValidStrPos(source, start, to, to.length() + 4);
@@ -182,11 +152,11 @@ public class AttributeParser {
                     j++;
                     while (j < (source.length() - 2)
                             && (source.charAt(j) == ' '
-                            || source.charAt(j) == '\n')){
+                            || source.charAt(j) == '\n')) {
                         j++;
                     }
                     int i = j;
-                    while (i < source.length()-2
+                    while (i < source.length() - 2
                             && source.charAt(i) != '\"'
                             && source.charAt(i) != ' '
                             && source.charAt(i) != '\n') {

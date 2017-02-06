@@ -2,10 +2,12 @@ package me.yluo.htmlview;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 
-public class MainActivity extends Activity implements ContentHandler {
+import java.io.IOException;
+import java.io.InputStream;
+
+public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -14,42 +16,18 @@ public class MainActivity extends Activity implements ContentHandler {
 
         TextView t = (TextView) findViewById(R.id.text);
 
-    }
+        String text = "";
 
-
-
-
-    //android.text.Html
-
-    private void testPull() throws Exception {
-        //HtmlParser parser = new HtmlParser(this);
-        //InputStream is = getAssets().open("TestHtml.html");
-        //parser.parase(is);
-    }
-
-    @Override
-    public void startDocument() {
-        Log.e("HTML", "===START===");
-    }
-
-    @Override
-    public void endDocument() {
-        Log.e("HTML", "===END===");
-    }
-
-    @Override
-    public void startElement(int type, String name, String atts) {
-        Log.e("HTML", "<" + name + (atts == null ? "" : " " + atts) + ">");
-    }
-
-    @Override
-    public void endElement(int type, String name) {
-        Log.e("HTML", "<" + name + "/>");
-    }
-
-    @Override
-    public void characters(char[] ch, int start, int len) {
-        String s = new String(ch, start, len);
-        Log.e("HTML", s);
+        try {
+            InputStream in = getAssets().open("TestHtml.html");
+            int size = in.available();
+            byte[] buffer = new byte[size];
+            in.read(buffer);
+            text = new String(buffer);
+            in.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        HtmlView.parseHtml(text).into(t);
     }
 }

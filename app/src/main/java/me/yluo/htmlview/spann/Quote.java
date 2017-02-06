@@ -1,0 +1,65 @@
+package me.yluo.htmlview.spann;
+
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.text.Layout;
+import android.text.TextPaint;
+import android.text.style.CharacterStyle;
+import android.text.style.LeadingMarginSpan;
+import android.text.style.LineHeightSpan;
+
+import me.yluo.htmlview.HtmlView;
+
+public class Quote extends CharacterStyle implements LeadingMarginSpan, LineHeightSpan {
+    //padding: 0 1em;
+    //color: #777;
+    //border-left: 0.25em solid #ddd;
+    //margin-bottom: 16px;
+    private static final int STRIPE_WIDTH = 10;
+    private static final int GAP_WIDTH = 40;
+    private static final int GAP_COLOR = 0xffdddddd;
+    private static final int TEXT_COLOR = 0xff777777;
+    private static final float LINE_HEIGHT = 1.25f / HtmlView.LINE_HEIGHT;
+
+    public Quote() {
+    }
+
+    public int getLeadingMargin(boolean first) {
+        return STRIPE_WIDTH + GAP_WIDTH;
+    }
+
+    public void drawLeadingMargin(Canvas c, Paint p, int x, int dir,
+                                  int top, int baseline, int bottom,
+                                  CharSequence text, int start, int end,
+                                  boolean first, Layout layout) {
+        Paint.Style style = p.getStyle();
+        int color = p.getColor();
+
+        p.setStyle(Paint.Style.FILL);
+        p.setColor(GAP_COLOR);
+
+        if (!first) {
+            top = top - (bottom - baseline);
+        } else {
+            top = top - STRIPE_WIDTH;
+        }
+
+        c.drawRect(x, top, x + dir * STRIPE_WIDTH, baseline, p);
+
+        p.setStyle(style);
+        p.setColor(color);
+    }
+
+    @Override
+    public void updateDrawState(TextPaint tp) {
+        tp.setColor(TEXT_COLOR);
+    }
+
+    @Override
+    public void chooseHeight(CharSequence text, int start, int end, int spanstartv, int v, Paint.FontMetricsInt fm) {
+        fm.ascent *= LINE_HEIGHT;
+        fm.descent *= LINE_HEIGHT;
+        fm.top  *= LINE_HEIGHT;
+        fm.bottom *= LINE_HEIGHT;
+    }
+}
