@@ -2,7 +2,6 @@ package me.yluo.htmlview;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.text.Html;
 import android.widget.TextView;
 
 import java.io.IOException;
