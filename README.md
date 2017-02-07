@@ -1,5 +1,9 @@
 # HtmlView
 Android Html富文本view,支持一些基本的标签。__开发中部分无法使用__
+
+### 软件截图
+![image](https://github.com/freedom10086/HtmlView/blob/master/art/img1.jpg)
+![image](https://github.com/freedom10086/HtmlView/blob/master/art/img2.jpg)
  
 - 替换了android `Html` 类的html解析器（应该说是xml解析器,他的做法是先将html转换为xml然后再解析）
 - 全标签支持自定义,源码中常用标签无法自定义,自定义的`mTagHandler`无法处理如 `br` `p` `ul`...等标签

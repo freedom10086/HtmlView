@@ -1,16 +1,19 @@
 package me.yluo.htmlview.spann;
 
+import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.text.Spanned;
 import android.text.TextPaint;
+import android.text.style.LineBackgroundSpan;
 import android.text.style.LineHeightSpan;
 import android.text.style.MetricAffectingSpan;
 
 import me.yluo.htmlview.HtmlView;
 
-public class Heading extends MetricAffectingSpan implements LineHeightSpan {
+public class Heading extends MetricAffectingSpan implements LineHeightSpan, LineBackgroundSpan {
     private static final float[] TEXT_SIZE = new float[]{
-            2.0f, 1.5f, 1.25f, 1.0f, 0.875f, 0.85f
+            1.8f, 1.5f, 1.25f, 1.0f, 0.875f, 0.85f
     };
 
     private static final int[] TEXT_COLOR = new int[]{
@@ -77,7 +80,25 @@ public class Heading extends MetricAffectingSpan implements LineHeightSpan {
     public void chooseHeight(CharSequence text, int start, int end, int spanstartv, int v, Paint.FontMetricsInt fm) {
         fm.top *= LINE_HEIGHT;
         fm.ascent *= LINE_HEIGHT;
-        fm.bottom *= LINE_HEIGHT;
         fm.descent *= LINE_HEIGHT;
+        fm.bottom *= LINE_HEIGHT;
+    }
+
+    @Override
+    public void drawBackground(Canvas c, Paint p, int left, int right, int top, int baseline, int bottom, CharSequence text, int start, int end, int lnum) {
+        //h1 h2 和最后一行
+        if (level <= 2 && (((Spanned) text).getSpanEnd(this) == end - 1)) {
+            int color = p.getColor();
+            float width = p.getStrokeWidth();
+
+            p.setColor(0xffeeeeee);
+            p.setStrokeWidth(HtmlView.FONT_SIZE / 14);
+            c.drawLine(left, baseline + HtmlView.FONT_SIZE / 2,
+                    right, baseline + HtmlView.FONT_SIZE / 2, p);
+
+            p.setColor(color);
+            p.setStrokeWidth(width);
+        }
+
     }
 }

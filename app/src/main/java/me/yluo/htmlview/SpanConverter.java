@@ -10,12 +10,18 @@ import java.io.IOException;
 import java.util.Stack;
 
 import me.yluo.htmlview.spann.Bold;
+import me.yluo.htmlview.spann.Code;
 import me.yluo.htmlview.spann.Heading;
+import me.yluo.htmlview.spann.Hr;
 import me.yluo.htmlview.spann.Image;
 import me.yluo.htmlview.spann.Italic;
+import me.yluo.htmlview.spann.Li;
 import me.yluo.htmlview.spann.Link;
+import me.yluo.htmlview.spann.Pre;
 import me.yluo.htmlview.spann.Quote;
 import me.yluo.htmlview.spann.Strike;
+import me.yluo.htmlview.spann.Sub;
+import me.yluo.htmlview.spann.Super;
 import me.yluo.htmlview.spann.UnderLine;
 
 public class SpanConverter implements ContentHandler {
@@ -71,12 +77,13 @@ public class SpanConverter implements ContentHandler {
             case HtmlTag.UNKNOWN:
                 break;
             case HtmlTag.BR:
+                handleBlockTag(node.type, false);
                 break;
             case HtmlTag.IMG:
                 handleImage(position, "www.baidu.com", 0);
                 break;
             case HtmlTag.HR:
-                handleBlockTag(node.type, false);
+                handleHr(position);
                 break;
             default:
                 node.start = position;
@@ -148,16 +155,18 @@ public class SpanConverter implements ContentHandler {
             case HtmlTag.FOOTER:
                 break;
             case HtmlTag.LI:
+                setSpan(start, new Li());
                 break;
             case HtmlTag.PRE:
+                setSpan(start, new Pre());
                 break;
             case HtmlTag.BLOCKQUOTE:
                 handleBlockquote(start);
                 break;
             case HtmlTag.Q:
-                break;
             case HtmlTag.CODE:
             case HtmlTag.KBD:
+                setSpan(start, new Code());
                 break;
             case HtmlTag.MARK:
                 break;
@@ -170,8 +179,10 @@ public class SpanConverter implements ContentHandler {
             case HtmlTag.SMALL:
                 break;
             case HtmlTag.SUB:
+                setSpan(start, new Sub());
                 break;
             case HtmlTag.SUP:
+                setSpan(start, new Super());
                 break;
             case HtmlTag.TT:
                 //Monospace
@@ -224,6 +235,14 @@ public class SpanConverter implements ContentHandler {
         position++;
 
         spannedBuilder.setSpan(new Image(url, d), start, position,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    private void handleHr(int start) {
+        spannedBuilder.append(' ');
+        position++;
+
+        spannedBuilder.setSpan(new Hr(), start, position,
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 

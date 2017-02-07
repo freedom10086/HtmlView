@@ -15,8 +15,8 @@ public class Quote extends CharacterStyle implements LeadingMarginSpan, LineHeig
     //color: #777;
     //border-left: 0.25em solid #ddd;
     //margin-bottom: 16px;
-    private static final int STRIPE_WIDTH = 10;
-    private static final int GAP_WIDTH = 40;
+    private static final float STRIPE_WIDTH = HtmlView.FONT_SIZE / 4;
+    private static final float GAP_WIDTH = HtmlView.FONT_SIZE;
     private static final int GAP_COLOR = 0xffdddddd;
     private static final int TEXT_COLOR = 0xff777777;
     private static final float LINE_HEIGHT = 1.25f / HtmlView.LINE_HEIGHT;
@@ -25,7 +25,7 @@ public class Quote extends CharacterStyle implements LeadingMarginSpan, LineHeig
     }
 
     public int getLeadingMargin(boolean first) {
-        return STRIPE_WIDTH + GAP_WIDTH;
+        return (int) (STRIPE_WIDTH + GAP_WIDTH);
     }
 
     public void drawLeadingMargin(Canvas c, Paint p, int x, int dir,
@@ -41,10 +41,10 @@ public class Quote extends CharacterStyle implements LeadingMarginSpan, LineHeig
         if (!first) {
             top = top - (bottom - baseline);
         } else {
-            top = top - STRIPE_WIDTH;
+            top = (int) (top - STRIPE_WIDTH) + 5;
         }
 
-        c.drawRect(x, top, x + dir * STRIPE_WIDTH, baseline, p);
+        c.drawRect(x, top, x + dir * STRIPE_WIDTH, baseline + 5, p);
 
         p.setStyle(style);
         p.setColor(color);
@@ -59,7 +59,7 @@ public class Quote extends CharacterStyle implements LeadingMarginSpan, LineHeig
     public void chooseHeight(CharSequence text, int start, int end, int spanstartv, int v, Paint.FontMetricsInt fm) {
         fm.ascent *= LINE_HEIGHT;
         fm.descent *= LINE_HEIGHT;
-        fm.top  *= LINE_HEIGHT;
+        fm.top *= LINE_HEIGHT;
         fm.bottom *= LINE_HEIGHT;
     }
 }
