@@ -1,14 +1,20 @@
 package me.yluo.htmlview;
 
+import android.content.Context;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.Spanned;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 
 public class HtmlView {
-    public static final float LINE_HEIGHT = 1.5f;
+    public static final float LINE_HEIGHT = 1.4f;
     public static final int TEXT_COLOR = 0xff333333;
     public static final int URL_COLOR = 0xff4078c0;
+    public static float FONT_SIZE = 40;
+    public static int VIEW_WIDTH = 1080;
 
 
     private String source;
@@ -29,9 +35,15 @@ public class HtmlView {
 
     public void into(TextView textView) {
         if (imageGetter == null) {
-            imageGetter = new DefaultImageGetter();
+            WindowManager wm = (WindowManager) textView.getContext()
+                    .getSystemService(Context.WINDOW_SERVICE);
+            Point p = new Point();
+            wm.getDefaultDisplay().getSize(p);
+            VIEW_WIDTH = p.x - textView.getPaddingStart() - textView.getPaddingEnd();
+            imageGetter = new DefaultImageGetter(VIEW_WIDTH, textView.getContext());
         }
 
+        FONT_SIZE = textView.getTextSize();
         Spanned spanned = SpanConverter.convert(source, imageGetter);
         textView.setTextColor(TEXT_COLOR);
         textView.setLineSpacing(0, LINE_HEIGHT);

@@ -2,6 +2,7 @@ package me.yluo.htmlview;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.text.Html;
 import android.widget.TextView;
 
 import java.io.IOException;
@@ -15,6 +16,10 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         TextView t = (TextView) findViewById(R.id.text);
+
+        int i = t.getWidth();
+        int j = t.getMaxWidth();
+        int k = t.getMeasuredWidth();
 
         String text = "";
 
@@ -30,4 +35,6 @@ public class MainActivity extends Activity {
         }
         HtmlView.parseHtml(text).into(t);
     }
+
+    //Html.fromHtml()
 }

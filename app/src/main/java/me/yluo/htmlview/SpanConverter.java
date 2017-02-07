@@ -1,5 +1,6 @@
 package me.yluo.htmlview;
 
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -23,6 +24,7 @@ import java.util.Stack;
 
 import me.yluo.htmlview.spann.Bold;
 import me.yluo.htmlview.spann.Heading;
+import me.yluo.htmlview.spann.Image;
 import me.yluo.htmlview.spann.Italic;
 import me.yluo.htmlview.spann.Link;
 import me.yluo.htmlview.spann.Quote;
@@ -84,6 +86,8 @@ public class SpanConverter implements ContentHandler {
             case HtmlTag.BR:
                 break;
             case HtmlTag.IMG:
+                handleImage(position, "www.baidu.com", 0);
+                break;
             case HtmlTag.HR:
                 handleBlockTag(node.type, false);
                 break;
@@ -220,6 +224,20 @@ public class SpanConverter implements ContentHandler {
 
     private void handleUrl(int start, String url) {
         spannedBuilder.setSpan(new Link("http://www.baidu.com/"), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    private void handleImage(int start, String url, int maxWidth) {
+        Drawable d = null;
+
+        if (imageGetter != null) {
+            d = imageGetter.getDrawable(url);
+        }
+
+        spannedBuilder.append("\uFFFC");
+        position++;
+
+        spannedBuilder.setSpan(new Image(url, d), start, position,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
 

@@ -22,6 +22,7 @@ public class HtmlTag {
     public static final int KBD = 12;//定义键盘文本
     public static final int MARK = 13;//突出显示部分文本
     public static final int A = 14; //href
+    //img 标签比较特殊 当为
     public static final int IMG = 15; //src
     public static final int BR = 16;
     public static final int SUB = 17;
