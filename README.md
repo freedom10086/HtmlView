@@ -1,5 +1,6 @@
 # HtmlView
-Android Html富文本view,支持一些基本的标签。__开发中部分无法使用__
+__注意 开发中部分无法使用__
+Android Html富文本view,让TextView显示html,目前已经支持一些基本的标签。
 
 ### 软件截图
 ![image](https://github.com/freedom10086/HtmlView/blob/master/art/img1.jpg)

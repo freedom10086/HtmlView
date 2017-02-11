@@ -1,14 +1,14 @@
 package me.yluo.htmlview;
 
-public interface ContentHandler {
+public interface ParserCallback {
 
     void startDocument(int initLen);
 
-    void startElement(String name, HtmlNode node);
-
-    void endElement(int type, String name);
+    void startElement(HtmlNode node);
 
     void characters(char[] ch, int start, int len);
+
+    void endElement(int type, String name);
 
     void endDocument();
 }

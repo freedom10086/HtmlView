@@ -24,7 +24,7 @@ import me.yluo.htmlview.spann.Sub;
 import me.yluo.htmlview.spann.Super;
 import me.yluo.htmlview.spann.UnderLine;
 
-public class SpanConverter implements ContentHandler {
+public class SpanConverter implements ParserCallback {
     private String mSource;
     private SpannableStringBuilder spannedBuilder;
     private HtmlView.ImageGetter imageGetter;
@@ -68,8 +68,8 @@ public class SpanConverter implements ContentHandler {
     }
 
     @Override
-    public void startElement(String name, HtmlNode node) {
-        Log.e("==", "startElement " + name);
+    public void startElement(HtmlNode node) {
+        Log.e("==", "startElement " + node.name);
         if (HtmlTag.isBolckTag(node.type)) {
             handleBlockTag(node.type, true);
         }

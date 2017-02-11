@@ -6,6 +6,14 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Hashtable;
 
+
+/**
+ * html解析器
+ * html文本-> html node
+ * startDocument->
+ * startElement->characters->endElement->
+ * endDocument
+ */
 public class HtmlParser {
     private static final char EOF = (char) -1;
     private static final Hashtable replaceMap = new Hashtable();
@@ -22,6 +30,7 @@ public class HtmlParser {
 
     //pre 标签的层数0-no >0 有
     private int preLevel = 0;
+
     private Reader reader;
     private int srcPos, srcCount;
     private char[] srcBuf;
@@ -29,18 +38,18 @@ public class HtmlParser {
     private int bufPos;
     private char[] buf;
     private char readItem = EOF, lastRead = EOF;
-    private ContentHandler handler;
+    private ParserCallback handler;
 
     public HtmlParser() {
     }
 
-    public void setHandler(ContentHandler handler) {
+    public void setHandler(ParserCallback handler) {
         this.handler = handler;
     }
 
     public void parase(InputStream is) throws IOException {
         if (handler == null) {
-            throw new NullPointerException("you must set ContentHandler");
+            throw new NullPointerException("you must set ParserCallback");
         }
         int len = is.available();
         len = len < 1024 ? 1024 : (len < 4096 ? 4096 : 6114);
@@ -145,15 +154,12 @@ public class HtmlParser {
 
         String name = new String(buf, 0, bufPos);
         int type = getTagType();
-
-        if (bufPos == 3 && buf[0] == 'p')
-            bufPos = 0;
+        bufPos = 0;
 
         if (readItem == '/') {
             read();
         }
 
-        String sttrs = "";
         if (readItem != '>') {
             if (readItem == ' ' || readItem == '\n') {
                 readNoSpcBr();
@@ -164,18 +170,26 @@ public class HtmlParser {
             }
 
             if (readItem != '>') {
-                sttrs = parseAttrs();
+                parseAttr();
             }
         }
 
         if (handler != null) {
-            // TODO: 2017/2/6  
-            handler.startElement(name, new HtmlNode(type));
+            if (type == HtmlTag.PRE) {
+                preLevel++;
+            }
+
+            //说明attr长度大于等于5为有效attr
+            HtmlNode.HtmlAttr attr = null;
+            if (bufPos >= 5) {
+                attr = AttrParser.parserAttr(type,buf, bufPos);
+            }
+            handler.startElement(new HtmlNode(type, name, attr));
         }
     }
 
     //解析属性值
-    private String parseAttrs() {
+    private void parseAttr() {
         bufPos = 0;
         do {
             buf[bufPos++] = readItem;
@@ -191,8 +205,6 @@ public class HtmlParser {
         if (readItem != '>') {
             skip();
         }
-        //// TODO: 2017/2/4 return new attrs
-        return new String(buf, 0, bufPos);
     }
 
     //解析结束标签</xxx  > </xxx> </xxx\n  >
@@ -203,13 +215,17 @@ public class HtmlParser {
                 //不可能出现太长的tag
                 break;
             } else {
-                buf[bufPos++] = (char) readItem;
+                buf[bufPos++] = readItem;
             }
         }
 
         String s = new String(buf, 0, bufPos);
         int type = getTagType();
         bufPos = 0;
+
+        if (type == HtmlTag.PRE && preLevel > 0) {
+            preLevel--;
+        }
         handler.endElement(type, s);
     }
 
@@ -231,7 +247,7 @@ public class HtmlParser {
     private void parseText() {
         bufPos = 0;
         while (readItem != EOF && readItem != '<' && readItem != '>') {
-            if (isInpre()) {//pre 标签 原封不动push
+            if (preLevel > 0 && bufPos > 0) {//pre 标签 原封不动push
                 pushText(readItem);
             } else {
                 if (readItem == ' ' || readItem == '\n') {
@@ -321,12 +337,6 @@ public class HtmlParser {
         }
 
         buf[bufPos++] = (char) c;
-    }
-
-    //判断是否在pre标签内
-    //pre 标签要保留格式
-    private boolean isInpre() {
-        return false;
     }
 
     private boolean equalTag(int start, String b) {

@@ -3,26 +3,22 @@ package me.yluo.htmlview;
 
 public class HtmlNode {
     public int type = HtmlTag.UNKNOWN;
+    public String name;
     public int start = -1;
+    public HtmlAttr attr;
 
 
-
-    private String src;//attr
-    private String href;//attr
-    private int color;//css,attr color
-    private int textAlign;
-    private int textDecoration;
-
-    //not support
-    //font-family: sans-serif;
-    //private int font_family
-
-    //css font-size{16px 1em}
-    //attr size{1,2,3,4,5}
-    //private int font_size;
-
-
-    public HtmlNode(int type) {
+    public HtmlNode(int type, String name, HtmlAttr attr) {
         this.type = type;
+        this.name = name;
+        this.attr = attr;
+    }
+
+    public static class HtmlAttr {
+        String src;//attr
+        String href;//attr
+        int color = -1;//css,attr color
+        int textAlign;
+        int textDecoration;
     }
 }

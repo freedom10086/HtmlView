@@ -3,7 +3,7 @@ package me.yluo.htmlview;
 import java.util.Hashtable;
 import java.util.Locale;
 
-public class NodeParser {
+public class AttrParser {
 
     private static final Hashtable<String, Integer> sColorMap;
     private static final int COLOR_NONE = -1;
@@ -33,6 +33,35 @@ public class NodeParser {
         sColorMap.put("yellow", 0xFFFFFF00);
     }
 
+    public static HtmlNode.HtmlAttr parserAttr(int type, char[] buf, int len) {
+        String attrStr = new String(buf, 0, len);
+
+        String src = null;
+        if (type == HtmlTag.IMG) {
+            src = getAttrs(attrStr, 0, "src");
+        }
+
+        String url = null;
+        if (type == HtmlTag.A) {
+            url = getAttrs(attrStr, 0, "href");
+        }
+
+        int color = -1;
+        if (type == HtmlTag.FONT || type == HtmlTag.P) {
+            color = getTextColor(attrStr, 0);
+        }
+
+        HtmlNode.HtmlAttr attr = null;
+        if (src != null || url != null || color >= 0) {
+            attr = new HtmlNode.HtmlAttr();
+            attr.href = url;
+            attr.src = src;
+            attr.color = color;
+        }
+
+        return attr;
+    }
+
     //只有块状标签才有意义
     //left right center
     //css
@@ -56,11 +85,11 @@ public class NodeParser {
 
     //color="red" " color:red "
     //attr css
-    private static int getTextColor(int i, String s) {
-        int j = getValidStrPos(s, i, "color", 10);
+    private static int getTextColor(String s, int start) {
+        int j = getValidStrPos(s, start, "color", 10);
         if (j < 0) return -1;
         //color 排除background-color bgcolor
-        if (j > i + 5
+        if (j > start + 5
                 && (s.charAt(j - 6) == '-')
                 || (s.charAt(j - 6) == 'g')) {
             return -1;
@@ -73,15 +102,15 @@ public class NodeParser {
                 }
 
                 if (s.charAt(j) == '\"') {
-                    i = j + 1;
-                    while (i < s.length()
-                            && s.charAt(i) != '\"'
-                            && s.charAt(i) != ' '
-                            && s.charAt(i) != '\n') {
-                        i++;
+                    start = j + 1;
+                    while (start < s.length()
+                            && s.charAt(start) != '\"'
+                            && s.charAt(start) != ' '
+                            && s.charAt(start) != '\n') {
+                        start++;
                     }
 
-                    return getHtmlColor(j + 1, i, s);
+                    return getHtmlColor(j + 1, start, s);
                 }
 
                 return -1;
@@ -91,16 +120,16 @@ public class NodeParser {
                     j++;
                 }
 
-                i = j + 1;
-                while (i < s.length()
-                        && s.charAt(i) != ';'
-                        && s.charAt(i) != ' '
-                        && s.charAt(i) != '\n'
-                        && s.charAt(i) != '\"') {
-                    i++;
+                start = j + 1;
+                while (start < s.length()
+                        && s.charAt(start) != ';'
+                        && s.charAt(start) != ' '
+                        && s.charAt(start) != '\n'
+                        && s.charAt(start) != '\"') {
+                    start++;
                 }
 
-                return getHtmlColor(j, i, s);
+                return getHtmlColor(j, start, s);
             } else {
                 if (s.charAt(j) == '\"') {
                     return -1;
@@ -139,7 +168,7 @@ public class NodeParser {
 
 
     //a="b" src="" href=""
-    private String getAttrs(String source, int start, String to) {
+    private static String getAttrs(String source, int start, String to) {
         if (source.length() - start - 5 < to.length()) return null;
         int j = getValidStrPos(source, start, to, to.length() + 4);
         if (j < 0) return null;

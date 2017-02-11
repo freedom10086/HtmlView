@@ -16,10 +16,6 @@ public class MainActivity extends Activity {
 
         TextView t = (TextView) findViewById(R.id.text);
 
-        int i = t.getWidth();
-        int j = t.getMaxWidth();
-        int k = t.getMeasuredWidth();
-
         String text = "";
 
         try {
