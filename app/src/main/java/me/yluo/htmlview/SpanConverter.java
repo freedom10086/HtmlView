@@ -24,7 +24,7 @@ import me.yluo.htmlview.spann.Sub;
 import me.yluo.htmlview.spann.Super;
 import me.yluo.htmlview.spann.UnderLine;
 
-public class SpanConverter implements ParserCallback {
+public class SpanConverter implements ParserCallback, HtmlView.ImageGetter.ImageGetterCallBack {
     private String mSource;
     private SpannableStringBuilder spannedBuilder;
     private HtmlView.ImageGetter imageGetter;
@@ -80,7 +80,7 @@ public class SpanConverter implements ParserCallback {
                 handleBlockTag(node.type, false);
                 break;
             case HtmlTag.IMG:
-                handleImage(position, "www.baidu.com", 0);
+                handleImage(position, node.attr.src, 0);
                 break;
             case HtmlTag.HR:
                 handleHr(position);
@@ -131,7 +131,7 @@ public class SpanConverter implements ParserCallback {
                 setSpan(start, new Bold());
                 break;
             case HtmlTag.A:
-                handleUrl(start, "");
+                handleUrl(start, "http://www.baidu.com/");
                 break;
             case HtmlTag.I:
             case HtmlTag.EM:
@@ -221,24 +221,20 @@ public class SpanConverter implements ParserCallback {
     }
 
     private void handleUrl(int start, String url) {
-        spannedBuilder.setSpan(new Link("http://www.baidu.com/"), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        spannedBuilder.setSpan(new Link(url), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
     private void handleImage(int start, String url, int maxWidth) {
-        Drawable d = null;
-
-        if (imageGetter != null) {
-            d = imageGetter.getDrawable(url);
-        }
-
         spannedBuilder.append("\uFFFC");
         position++;
 
-        spannedBuilder.setSpan(new Image(url, d), start, position,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (imageGetter != null) {
+            imageGetter.getDrawable(url, start, position, this);
+        }
     }
 
     private void handleHr(int start) {
+
         spannedBuilder.append(' ');
         position++;
 
@@ -251,4 +247,11 @@ public class SpanConverter implements ParserCallback {
         spannedBuilder.setSpan(span, start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
+
+    @Override
+    public void onImageReady(String source, int start, int end, Drawable d) {
+
+        spannedBuilder.setSpan(new Image(source, d), start, position,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
 }

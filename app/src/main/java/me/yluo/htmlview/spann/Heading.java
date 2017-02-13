@@ -99,6 +99,5 @@ public class Heading extends MetricAffectingSpan implements LineHeightSpan, Line
             p.setColor(color);
             p.setStrokeWidth(width);
         }
-
     }
 }

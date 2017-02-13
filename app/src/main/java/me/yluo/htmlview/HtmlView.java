@@ -55,8 +55,14 @@ public class HtmlView {
      * Make sure you call
      * setBounds() on your Drawable if it doesn't already have
      * its bounds set.
+     * start image 开始位置
+     * end 结束位置
      */
     public interface ImageGetter {
-        Drawable getDrawable(String source);
+        void getDrawable(String source, int start, int end, ImageGetterCallBack callBack);
+
+        interface ImageGetterCallBack {
+            void onImageReady(String source, int start, int end, Drawable d);
+        }
     }
 }
