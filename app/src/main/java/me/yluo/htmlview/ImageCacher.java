@@ -1,0 +1,151 @@
+package me.yluo.htmlview;
+
+
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Log;
+import android.util.LruCache;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Comparator;
+
+//磁盘缓存文件名有一个计数XXXX_99
+//用来表示使用次数 越多使用越不被清除
+public class ImageCacher {
+    private static ImageCacher imageCacher;
+    private static final String TAG = ImageCacher.class.getSimpleName();
+    private static final long CACHE_SIZE = 10 * 1024 * 1024;//10m
+    private String cacheDir;
+    private static LruCache<String, Bitmap> mMemoryCache;
+
+    static {
+        int maxMemory = (int) Runtime.getRuntime().maxMemory();
+        int cacheSize = maxMemory / 6;
+        Log.d(TAG, "image lrucache size:" + cacheSize);
+        mMemoryCache = new LruCache<String, Bitmap>(cacheSize) {
+            @Override
+            protected int sizeOf(String key, Bitmap bitmap) {
+                return bitmap.getByteCount();
+            }
+        };
+    }
+
+    private ImageCacher(String path) {
+        this.cacheDir = path;
+    }
+
+    public static ImageCacher instance(String path) {
+        if (imageCacher != null) {
+            return imageCacher;
+        }
+        File f = new File(path);
+        if (!f.exists() || !f.isDirectory()) {
+            f.mkdirs();
+        }
+        return new ImageCacher(path);
+    }
+
+    //存到内存
+    public void put(String key, Bitmap bitmap) {
+        mMemoryCache.put(key, bitmap);
+    }
+
+    //从内存和硬盘获取
+    public Bitmap get(String key) {
+        Bitmap b = mMemoryCache.get(key);
+        if (b == null) {
+            b = getDiskCache(key);
+        }
+        return b;
+    }
+
+
+    public OutputStream newDiskCacheStream(String key) throws IOException {
+        long size = ensureCacheSize();
+        Log.d(TAG, "cache size is :" + size);
+        key = hashKeyForDisk(key) + "_0";
+        File f = new File(cacheDir, hashKeyForDisk(key));
+        f.createNewFile();
+        return new FileOutputStream(f);
+    }
+
+    private Bitmap getDiskCache(String key) {
+        key = hashKeyForDisk(key);
+        File f = new File(cacheDir);
+        File[] fileList = f.listFiles();
+        for (File aFileList : fileList) {
+            int position = aFileList.getPath().lastIndexOf("_");
+            String name = aFileList.getName().substring(0, position);
+            if (name.equals(key)) {
+                Bitmap b = BitmapFactory.decodeFile(aFileList.getName());
+                int count = Integer.parseInt(aFileList.getPath().substring(position + 1)) + 1;
+                aFileList.renameTo(new File(name + count));
+                return b;
+            }
+        }
+        return null;
+    }
+
+    private String hashKeyForDisk(String key) {
+        String cacheKey;
+        try {
+            final MessageDigest mDigest = MessageDigest.getInstance("MD5");
+            mDigest.update(key.getBytes());
+            cacheKey = bytesToHexString(mDigest.digest());
+        } catch (NoSuchAlgorithmException e) {
+            cacheKey = String.valueOf(key.hashCode());
+        }
+        return cacheKey;
+    }
+
+    private String bytesToHexString(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < bytes.length; i++) {
+            String hex = Integer.toHexString(0xFF & bytes[i]);
+            if (hex.length() == 1) {
+                sb.append('0');
+            }
+            sb.append(hex);
+        }
+        return sb.toString();
+    }
+
+    private long ensureCacheSize() {
+        File f = new File(cacheDir);
+        File[] fileList = f.listFiles();
+        long size = 0;
+
+        for (File aFileList : fileList) {
+            if (!aFileList.isDirectory()) {
+                size = size + aFileList.length();
+            }
+        }
+
+        if (size > CACHE_SIZE) {
+            Arrays.sort(fileList, new Comparator<File>() {
+                @Override
+                public int compare(File o1, File o2) {
+                    int i1 = Integer.parseInt(o1.getName().substring(o1.getName().lastIndexOf("_") + 1));
+                    int i2 = Integer.parseInt(o2.getName().substring(o2.getName().lastIndexOf("_") + 1));
+                    return i1 - i2;
+                }
+            });
+
+            for (File aFileList : fileList) {
+                size -= aFileList.length();
+                aFileList.delete();
+                if (size < CACHE_SIZE) {
+                    break;
+                }
+
+            }
+        }
+        return size;
+    }
+}
