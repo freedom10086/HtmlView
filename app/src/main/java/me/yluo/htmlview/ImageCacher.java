@@ -2,21 +2,27 @@ package me.yluo.htmlview;
 
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.util.LruCache;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Comparator;
 
-//磁盘缓存文件名有一个计数XXXX_99
-//用来表示使用次数 越多使用越不被清除
+/**
+ * 磁盘缓存文件名有一个计数XXXX_99
+ * 用来表示使用次数 越多使用越不被清除
+ * 硬盘cache一般是下载过后立即存入
+ * 内存cache一般是使用时从硬盘读入
+ */
 public class ImageCacher {
     private static ImageCacher imageCacher;
     private static final String TAG = ImageCacher.class.getSimpleName();
@@ -41,28 +47,24 @@ public class ImageCacher {
     }
 
     public static ImageCacher instance(String path) {
-        if (imageCacher != null) {
-            return imageCacher;
+        if (imageCacher == null) {
+            File f = new File(path);
+            if (!f.exists() || !f.isDirectory()) {
+                f.mkdirs();
+            }
+            imageCacher = new ImageCacher(path);
         }
-        File f = new File(path);
-        if (!f.exists() || !f.isDirectory()) {
-            f.mkdirs();
-        }
-        return new ImageCacher(path);
+        return imageCacher;
     }
 
     //存到内存
-    public void put(String key, Bitmap bitmap) {
+    public void putMemCache(String key, Bitmap bitmap) {
         mMemoryCache.put(key, bitmap);
     }
 
-    //从内存和硬盘获取
-    public Bitmap get(String key) {
-        Bitmap b = mMemoryCache.get(key);
-        if (b == null) {
-            b = getDiskCache(key);
-        }
-        return b;
+    //从内存获取
+    public Bitmap getMemCache(String key) {
+        return mMemoryCache.get(key);
     }
 
 
@@ -75,7 +77,7 @@ public class ImageCacher {
         return new FileOutputStream(f);
     }
 
-    private Bitmap getDiskCache(String key) {
+    public InputStream getDiskCacheStream(String key) {
         key = hashKeyForDisk(key);
         File f = new File(cacheDir);
         File[] fileList = f.listFiles();
@@ -83,13 +85,31 @@ public class ImageCacher {
             int position = aFileList.getPath().lastIndexOf("_");
             String name = aFileList.getName().substring(0, position);
             if (name.equals(key)) {
-                Bitmap b = BitmapFactory.decodeFile(aFileList.getName());
-                int count = Integer.parseInt(aFileList.getPath().substring(position + 1)) + 1;
-                aFileList.renameTo(new File(name + count));
-                return b;
+                int count = Integer.parseInt(aFileList.getName().substring(position + 1)) + 1;
+                File newFile = new File(name + "_" + count);
+                Log.d(TAG, "rename file to " + newFile + " old file is " + aFileList);
+                aFileList.renameTo(newFile);
+                try {
+                    return new FileInputStream(newFile);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
             }
         }
         return null;
+    }
+
+    public long getCacheSize() {
+        File f = new File(cacheDir);
+        File[] fileList = f.listFiles();
+        long size = 0;
+        for (File aFileList : fileList) {
+            if (!aFileList.isDirectory()) {
+                size = size + aFileList.length();
+            }
+        }
+
+        return size;
     }
 
     private String hashKeyForDisk(String key) {

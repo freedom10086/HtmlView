@@ -39,7 +39,7 @@ public class HtmlView {
             Point p = new Point();
             wm.getDefaultDisplay().getSize(p);
             VIEW_WIDTH = p.x - textView.getPaddingStart() - textView.getPaddingEnd();
-            imageGetter = new DefaultImageGetter(VIEW_WIDTH, textView.getContext());
+            imageGetter = new me.yluo.htmlview.ImageGetter(VIEW_WIDTH, textView.getContext());
         }
 
         FONT_SIZE = textView.getTextSize();
