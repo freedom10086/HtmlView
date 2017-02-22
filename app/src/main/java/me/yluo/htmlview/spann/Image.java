@@ -89,7 +89,6 @@ public class Image extends ReplacementSpan {
             transY = top + PADDING;
         }
 
-
         canvas.translate(x, transY);
         b.draw(canvas);
         canvas.restore();

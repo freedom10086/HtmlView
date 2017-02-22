@@ -67,28 +67,31 @@ public class ImageCacher {
         return mMemoryCache.get(key);
     }
 
-
+    //新建一个硬盘缓存
     public OutputStream newDiskCacheStream(String key) throws IOException {
         long size = ensureCacheSize();
         Log.d(TAG, "cache size is :" + size);
         key = hashKeyForDisk(key) + "_0";
-        File f = new File(cacheDir, hashKeyForDisk(key));
+        File f = new File(cacheDir, key);
         f.createNewFile();
+        Log.d(TAG, "create new disk cache " + key);
         return new FileOutputStream(f);
     }
 
+    //获得一个硬盘缓存流
     public InputStream getDiskCacheStream(String key) {
         key = hashKeyForDisk(key);
         File f = new File(cacheDir);
         File[] fileList = f.listFiles();
-        for (File aFileList : fileList) {
-            int position = aFileList.getPath().lastIndexOf("_");
-            String name = aFileList.getName().substring(0, position);
+        for (File oldFile : fileList) {
+            int position = oldFile.getName().lastIndexOf("_");
+            if (position <= 0) continue;
+            String name = oldFile.getName().substring(0, position);
             if (name.equals(key)) {
-                int count = Integer.parseInt(aFileList.getName().substring(position + 1)) + 1;
-                File newFile = new File(name + "_" + count);
-                Log.d(TAG, "rename file to " + newFile + " old file is " + aFileList);
-                aFileList.renameTo(newFile);
+                int count = Integer.parseInt(oldFile.getName().substring(position + 1)) + 1;
+                File newFile = new File(cacheDir, name + "_" + count);
+                Log.d(TAG, "rename file to " + newFile + " old file is " + oldFile);
+                oldFile.renameTo(newFile);
                 try {
                     return new FileInputStream(newFile);
                 } catch (FileNotFoundException e) {
@@ -108,7 +111,6 @@ public class ImageCacher {
                 size = size + aFileList.length();
             }
         }
-
         return size;
     }
 

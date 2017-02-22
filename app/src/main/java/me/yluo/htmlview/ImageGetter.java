@@ -6,7 +6,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -48,14 +50,15 @@ public class ImageGetter implements HtmlView.ImageGetter {
     @Override
     public void getDrawable(String source, int start, int end, ImageGetterCallBack callBack) {
         if (callBack == null) return;
+        Log.d(TAG, "get getDrawable " + source);
         Bitmap b = imageCacher.getMemCache(source);
-
         if (b == null) {
             if (isLocal()) {//本地图片不缓存到硬盘
                 b = decodeBitmapFromRes(context.getResources(), R.drawable.test1, maxWidth);
             } else {
                 //网络图片再检查硬盘缓存
-                b = decodeBitmapFromStream(imageCacher.getDiskCacheStream(source), maxWidth);
+                b = BitmapFactory.decodeStream(imageCacher.getDiskCacheStream(source));
+                if (b != null) Log.d(TAG, "get image from diskcache " + source);
                 if (b == null && !mPool.isShutdown()) {
                     mPool.execute(new BitmapWorkerTask(source, start, end, callBack));
                 }
@@ -85,7 +88,7 @@ public class ImageGetter implements HtmlView.ImageGetter {
     }
 
     private boolean isLocal() {
-        return true;
+        return false;
     }
 
     //图片下载及存储
@@ -103,12 +106,13 @@ public class ImageGetter implements HtmlView.ImageGetter {
         }
 
         public void cancel() {
-            isCancel = false;
+            isCancel = true;
         }
 
         @Override
         public void run() {
             taskCollection.add(this);
+            Log.d(TAG, "start download image " + imageUrl);
             HttpURLConnection urlConnection = null;
             BufferedOutputStream out = null;
             BufferedInputStream in = null;
@@ -117,8 +121,10 @@ public class ImageGetter implements HtmlView.ImageGetter {
                 final URL url = new URL(imageUrl);
                 urlConnection = (HttpURLConnection) url.openConnection();
                 in = new BufferedInputStream(urlConnection.getInputStream(), 4 * 1024);
-                bitmap = decodeBitmapFromStream(imageCacher.getDiskCacheStream(imageUrl), maxWidth);
+                //bitmap = decodeBitmapFromStream(in, maxWidth);
+                bitmap = BitmapFactory.decodeStream(in);
                 if (bitmap != null && !isCancel) {
+                    Log.d(TAG, "download image compete " + imageUrl);
                     //存到硬盘
                     Bitmap.CompressFormat f = Bitmap.CompressFormat.PNG;
                     if (imageUrl.endsWith(".jpg") || imageUrl.endsWith(".jpeg") ||
@@ -133,6 +139,8 @@ public class ImageGetter implements HtmlView.ImageGetter {
                     //存到内存之前需要压缩
                     bitmap = scaleBitmap(bitmap, maxWidth);
                     imageCacher.putMemCache(imageUrl, bitmap);
+                } else {
+                    Log.d(TAG, "download image error " + imageUrl);
                 }
             } catch (final IOException e) {
                 e.printStackTrace();
@@ -153,8 +161,7 @@ public class ImageGetter implements HtmlView.ImageGetter {
             }
             taskCollection.remove(this);
             if (!isCancel && bitmap != null) {
-                //如果下载失败就不用返回了
-                //因为之前以前有holder了
+                //如果下载失败就不用返回了 因为之前以前有holder了
                 callBack.onImageReady(imageUrl, start, end, bmpToDrawable(imageUrl, bitmap));
             }
         }
@@ -171,8 +178,11 @@ public class ImageGetter implements HtmlView.ImageGetter {
         }
     }
 
+    //// TODO: 2017/2/22
     private Drawable getPlaceHolder(String souce) {
-        return null;
+        ColorDrawable colorDrawable = new ColorDrawable(0xffcccccc);
+        colorDrawable.setBounds(0, 0, 500, 300);
+        return colorDrawable;
     }
 
     public static Bitmap decodeBitmapFromRes(Resources res, int resId, int reqWidth) {
@@ -204,8 +214,6 @@ public class ImageGetter implements HtmlView.ImageGetter {
             float scale = maxWidth * 1.0f / width;
             Matrix matrix = new Matrix();
             matrix.postScale(scale, scale);
-            height = (int) (height * scale);
-            width = maxWidth;
             return Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
         }
         return bitmap;

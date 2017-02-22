@@ -191,8 +191,10 @@ public class AttrParser {
                             && source.charAt(i) != '\n') {
                         i++;
                     }
-                    if (i - j > 0) {
-                        return source.substring(j, i);
+                    if (i - j >= 0 && i < source.length()) {
+                        return source.substring(j, i + 1);
+                    } else {
+                        return source.substring(j, source.length());
                     }
                 }
                 return null;
