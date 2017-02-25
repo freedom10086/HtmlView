@@ -1,13 +1,9 @@
 package me.yluo.htmlview;
 
 import android.app.Activity;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.widget.TextView;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -19,7 +15,6 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         TextView t = (TextView) findViewById(R.id.text);
-
 
         String text = "";
 
@@ -38,5 +33,5 @@ public class MainActivity extends Activity {
 
     }
 
-    //Html.fromHtml()
+
 }

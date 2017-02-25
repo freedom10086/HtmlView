@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -52,20 +51,27 @@ public class ImageGetter implements HtmlView.ImageGetter {
         if (callBack == null) return;
         Log.d(TAG, "get getDrawable " + source);
         Bitmap b = imageCacher.getMemCache(source);
+
         if (b == null) {
-            if (isLocal()) {//本地图片不缓存到硬盘
+            if (isLocal()) {
+                //本地图片不缓存到硬盘
                 b = decodeBitmapFromRes(context.getResources(), R.drawable.test1, maxWidth);
             } else {
                 //网络图片再检查硬盘缓存
                 b = BitmapFactory.decodeStream(imageCacher.getDiskCacheStream(source));
-                if (b != null) Log.d(TAG, "get image from diskcache " + source);
+                b = scaleBitmap(b, maxWidth);
+                if (b != null) {
+                    Log.d(TAG, "get image from diskcache " + source);
+                }
+
+                //没有缓存去下载
                 if (b == null && !mPool.isShutdown()) {
                     mPool.execute(new BitmapWorkerTask(source, start, end, callBack));
                 }
             }
 
+            //放到内存缓存
             if (b != null) {
-                b = scaleBitmap(b, maxWidth);
                 imageCacher.putMemCache(source, b);
             }
         }
@@ -133,11 +139,14 @@ public class ImageGetter implements HtmlView.ImageGetter {
                     } else if (imageUrl.endsWith(".webp")) {
                         f = Bitmap.CompressFormat.WEBP;
                     }
+
                     out = new BufferedOutputStream(imageCacher.newDiskCacheStream(imageUrl), 4 * 1024);
                     bitmap.compress(f, 90, out);
 
+                    Log.d(TAG, "image init width is " + bitmap.getWidth());
                     //存到内存之前需要压缩
                     bitmap = scaleBitmap(bitmap, maxWidth);
+                    Log.d(TAG, "after scale image width is " + bitmap.getWidth());
                     imageCacher.putMemCache(imageUrl, bitmap);
                 } else {
                     Log.d(TAG, "download image error " + imageUrl);
@@ -185,47 +194,62 @@ public class ImageGetter implements HtmlView.ImageGetter {
         return colorDrawable;
     }
 
-    public static Bitmap decodeBitmapFromRes(Resources res, int resId, int reqWidth) {
-        // 第一次解析将inJustDecodeBounds设置为true，来获取图片大小
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeResource(res, resId, options);
-        // 调用上面定义的方法计算inSampleSize值
-        options.inSampleSize = options.outWidth / reqWidth;
-        // 使用获取到的inSampleSize值再次解析图片
-        options.inJustDecodeBounds = false;
-        return BitmapFactory.decodeResource(res, resId, options);
-    }
 
     public static Bitmap decodeBitmapFromStream(InputStream is, int reqWidth) {
         if (is == null) return null;
         final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
-        BitmapFactory.decodeStream(is);
-        options.inSampleSize = options.outWidth / reqWidth;
+        BitmapFactory.decodeStream(is, null, options);
+        options.inSampleSize = calculateInSampleSize(options, reqWidth);
         options.inJustDecodeBounds = false;
-        return BitmapFactory.decodeStream(is, null, options);
+        Bitmap src = BitmapFactory.decodeStream(is, null, options);
+        return scaleBitmap(src, reqWidth);
     }
 
-    private static Bitmap scaleBitmap(Bitmap bitmap, int maxWidth) {
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-        if (width > maxWidth) {//缩放图片
-            float scale = maxWidth * 1.0f / width;
-            Matrix matrix = new Matrix();
-            matrix.postScale(scale, scale);
-            return Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
+    public static Bitmap decodeBitmapFromRes(Resources res, int resId, int reqWidth) {
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true; // 设置成了true,不占用内存，只获取bitmap宽高
+        BitmapFactory.decodeResource(res, resId, options); // 第一次解码
+        options.inSampleSize = calculateInSampleSize(options, reqWidth);
+        options.inJustDecodeBounds = false;
+        Bitmap src = BitmapFactory.decodeResource(res, resId, options);
+        return scaleBitmap(src, reqWidth);
+    }
+
+    private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth) {
+        // 源图片的高度和宽度
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+        if (width > reqWidth) {
+            final int halfWidth = width / 2;
+            while ((halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2;
+            }
         }
-        return bitmap;
-        /**
-         * 压缩图片质量:
-         * bitmap.compress(Bitmap.CompressFormat.JPEG, quality, fos);
-         * 其中的quality为0~100, 可以压缩图片质量, 不过对于大图必须对图片resize
-         * 这个是等比例缩放:
-         * bitmap = Bitmap.createScaledBitmap(bitmap, width, height, false);
-         * newBitmap = Bitmap.createBitmap(oldBitmap, 0, 0, width, height, matrix, true);//用距阵的方式缩放
-         * 这个是截取图片某部分:
-         * bitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
-         */
+        return inSampleSize;
+    }
+
+    private static Bitmap scaleBitmap(Bitmap src, int dstWidth) {
+        if (src == null) return null;
+        int srcWidth = src.getWidth();
+        if (srcWidth <= dstWidth) return src;
+
+        float scale = dstWidth * 1.0f / srcWidth;
+        int dstHeight = (int) (scale * src.getHeight());
+
+        Bitmap dst = Bitmap.createScaledBitmap(src, dstWidth, dstHeight, false);
+        if (src != dst) { // 如果没有缩放，那么不回收
+            src.recycle(); // 释放Bitmap的native像素数组
+        }
+        return dst;
     }
 }
+/**
+ * 笔记 android 分辨率和dpi关系
+ * ldpi	    120dpi	0.75
+ * mdpi	    160dpi	1
+ * hdpi	    240dpi	1.5
+ * xhdpi    320dpi	2     1280*720   1dp=2px
+ * xxhdpi： 480dpi  3     1920*1080 1dp=3px
+ * xxxhdpi  640dpi  4
+ */
