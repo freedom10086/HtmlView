@@ -20,10 +20,13 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import me.yluo.htmlview.callback.ImageGetter;
+import me.yluo.htmlview.callback.ImageGetterCallBack;
 
-public class ImageGetter implements HtmlView.ImageGetter {
 
-    private static final String TAG = ImageGetter.class.getSimpleName();
+public class DefaultImageGetter implements ImageGetter {
+
+    private static final String TAG = DefaultImageGetter.class.getSimpleName();
     private Context context;
     private ImageCacher imageCacher;
     private int maxWidth;//最大宽度 图片不要大于这个值
@@ -39,7 +42,7 @@ public class ImageGetter implements HtmlView.ImageGetter {
     }
 
 
-    public ImageGetter(int maxWidth, Context context) {
+    public DefaultImageGetter(int maxWidth, Context context) {
         this.context = context;
         this.maxWidth = maxWidth;
         imageCacher = ImageCacher.instance(context.getCacheDir() + "/imageCache/");
@@ -244,6 +247,7 @@ public class ImageGetter implements HtmlView.ImageGetter {
         return dst;
     }
 }
+
 /**
  * 笔记 android 分辨率和dpi关系
  * ldpi	    120dpi	0.75

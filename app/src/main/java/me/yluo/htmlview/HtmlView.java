@@ -2,25 +2,35 @@ package me.yluo.htmlview;
 
 import android.content.Context;
 import android.graphics.Point;
-import android.graphics.drawable.Drawable;
 import android.text.Spanned;
+import android.util.Log;
 import android.view.WindowManager;
 import android.widget.TextView;
 
+import java.lang.ref.WeakReference;
 
-public class HtmlView {
+import me.yluo.htmlview.callback.ImageGetter;
+import me.yluo.htmlview.callback.ViewChangeNotify;
+
+
+public class HtmlView implements ViewChangeNotify {
+
+    private static final String TAG = HtmlView.class.getSimpleName();
     public static final float LINE_HEIGHT = 1.4f;
     public static final int TEXT_COLOR = 0xff333333;
     public static final int URL_COLOR = 0xff4078c0;
     public static float FONT_SIZE = 40;
     public static int VIEW_WIDTH = 1080;
 
-
     private String source;
     private ImageGetter imageGetter;
+    private boolean isViewSet;
+    private WeakReference<TextView> target;
+    private Spanned spanned;
 
     private HtmlView(String source) {
         this.source = source;
+        isViewSet = false;
     }
 
     public static HtmlView parseHtml(String source) {
@@ -32,37 +42,43 @@ public class HtmlView {
         return this;
     }
 
-    public void into(TextView textView) {
+    public void into(TextView target) {
+        if (this.target == null) {
+            this.target = new WeakReference<>(target);
+        }
         if (imageGetter == null) {
-            WindowManager wm = (WindowManager) textView.getContext()
+            WindowManager wm = (WindowManager) target.getContext()
                     .getSystemService(Context.WINDOW_SERVICE);
             Point p = new Point();
             wm.getDefaultDisplay().getSize(p);
-            VIEW_WIDTH = p.x - textView.getPaddingStart() - textView.getPaddingEnd();
-            imageGetter = new me.yluo.htmlview.ImageGetter(VIEW_WIDTH, textView.getContext());
+            VIEW_WIDTH = p.x - target.getPaddingStart() - target.getPaddingEnd();
+            imageGetter = new DefaultImageGetter(VIEW_WIDTH, target.getContext());
         }
 
-        FONT_SIZE = textView.getTextSize();
-        Spanned spanned = SpanConverter.convert(source, imageGetter);
-        textView.setTextColor(TEXT_COLOR);
-        textView.setLineSpacing(0, LINE_HEIGHT);
-        textView.setText(spanned);
+        FONT_SIZE = target.getTextSize();
+        spanned = SpanConverter.convert(source, imageGetter, this);
+        target.setTextColor(TEXT_COLOR);
+        target.setLineSpacing(0, LINE_HEIGHT);
+        target.setText(spanned);
+        isViewSet = true;
     }
 
 
-    /**
-     * 处理图片标签/本地图片or网络图片
-     * Make sure you call
-     * setBounds() on your Drawable if it doesn't already have
-     * its bounds set.
-     * start image 开始位置
-     * end 结束位置
-     */
-    public interface ImageGetter {
-        void getDrawable(String source, int start, int end, ImageGetterCallBack callBack);
+    @Override
+    public void notifyViewChange() {
+        if (target == null) return;
+        final TextView t = target.get();
 
-        interface ImageGetterCallBack {
-            void onImageReady(String source, int start, int end, Drawable d);
+        if (isViewSet && t != null && spanned != null) {
+            t.post(new Runnable() {
+                @Override
+                public void run() {
+                    t.setText(spanned);
+                    Log.d(TAG, "notifyViewChange postInvalidateDelayed");
+                }
+            });
+        } else {
+            Log.d(TAG, "notifyViewChange is not set view do nothing");
         }
     }
 }

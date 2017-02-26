@@ -9,6 +9,9 @@ import android.util.Log;
 import java.io.IOException;
 import java.util.Stack;
 
+import me.yluo.htmlview.callback.ImageGetter;
+import me.yluo.htmlview.callback.ImageGetterCallBack;
+import me.yluo.htmlview.callback.ViewChangeNotify;
 import me.yluo.htmlview.spann.Bold;
 import me.yluo.htmlview.spann.Code;
 import me.yluo.htmlview.spann.Heading;
@@ -24,25 +27,28 @@ import me.yluo.htmlview.spann.Sub;
 import me.yluo.htmlview.spann.Super;
 import me.yluo.htmlview.spann.UnderLine;
 
-public class SpanConverter implements ParserCallback, HtmlView.ImageGetter.ImageGetterCallBack {
+public class SpanConverter implements ParserCallback, ImageGetterCallBack {
+    private static final String TAG = SpanConverter.class.getSimpleName();
     private String mSource;
     private SpannableStringBuilder spannedBuilder;
-    private HtmlView.ImageGetter imageGetter;
+    private ImageGetter imageGetter;
     private HtmlParser parser;
     private Stack<HtmlNode> nodes;
+    private ViewChangeNotify notify;
     private int position;
 
-    private SpanConverter(String source, HtmlView.ImageGetter imageGetter) {
+    private SpanConverter(String source, ImageGetter imageGetter, ViewChangeNotify notify) {
         mSource = source;
         this.imageGetter = imageGetter;
         parser = new HtmlParser();
         nodes = new Stack<>();
         parser.setHandler(this);
         position = 0;
+        this.notify = notify;
     }
 
-    public static Spanned convert(String source, HtmlView.ImageGetter imageGetter) {
-        SpanConverter converter = new SpanConverter(source, imageGetter);
+    public static Spanned convert(String source, ImageGetter imageGetter, ViewChangeNotify notify) {
+        SpanConverter converter = new SpanConverter(source, imageGetter, notify);
         return converter.startConvert();
     }
 
@@ -250,8 +256,15 @@ public class SpanConverter implements ParserCallback, HtmlView.ImageGetter.Image
 
     @Override
     public void onImageReady(String source, int start, int end, Drawable d) {
+        Log.d(TAG, "onImageReady: " + source + " position: " + start + "," + end);
+        Image[] is = spannedBuilder.getSpans(start, end, Image.class);
+        for (Image i : is) {
+            spannedBuilder.removeSpan(i);
+        }
 
-        spannedBuilder.setSpan(new Image(source, d), start, position,
+        spannedBuilder.setSpan(new Image(source, d), start, end,
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        notify.notifyViewChange();
+
     }
 }

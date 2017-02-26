@@ -16,7 +16,7 @@ public class Image extends ReplacementSpan {
     private Drawable mDrawable;
     private WeakReference<Drawable> mDrawableRef;
     private static final float LINE_HEIGHT = 1.0f / HtmlView.LINE_HEIGHT;
-    private static final int PADDING = (int) HtmlView.FONT_SIZE / 2;
+    private static final int PADDING = (int) HtmlView.FONT_SIZE / 5;
 
     public Image(String source, Drawable d) {
         this.source = source;
@@ -67,6 +67,7 @@ public class Image extends ReplacementSpan {
                 fm.ascent = -(int) (rect.bottom * LINE_HEIGHT) - PADDING;
                 fm.descent = (int) (HtmlView.FONT_SIZE * (HtmlView.LINE_HEIGHT - 1)) + PADDING;
             }
+
             fm.top = fm.ascent;
             fm.bottom = fm.descent;
         }
