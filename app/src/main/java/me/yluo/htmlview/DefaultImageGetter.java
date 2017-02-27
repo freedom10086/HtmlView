@@ -7,10 +7,14 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.text.Spanned;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -54,11 +58,13 @@ public class DefaultImageGetter implements ImageGetter {
         if (callBack == null) return;
         Log.d(TAG, "get getDrawable " + source);
         Bitmap b = imageCacher.getMemCache(source);
-
         if (b == null) {
-            if (isLocal()) {
-                //本地图片不缓存到硬盘
-                b = decodeBitmapFromRes(context.getResources(), R.drawable.test1, maxWidth);
+            if (source.startsWith("smiley/")) {
+                try {
+                    b = decodeBitmapFromStream(context.getAssets().open(source), maxWidth);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             } else {
                 //网络图片再检查硬盘缓存
                 b = BitmapFactory.decodeStream(imageCacher.getDiskCacheStream(source));
@@ -94,10 +100,6 @@ public class DefaultImageGetter implements ImageGetter {
                 mPool.shutdownNow();
             }
         }
-    }
-
-    private boolean isLocal() {
-        return false;
     }
 
     //图片下载及存储
@@ -206,6 +208,17 @@ public class DefaultImageGetter implements ImageGetter {
         options.inSampleSize = calculateInSampleSize(options, reqWidth);
         options.inJustDecodeBounds = false;
         Bitmap src = BitmapFactory.decodeStream(is, null, options);
+        return scaleBitmap(src, reqWidth);
+    }
+
+    public static Bitmap decodeBitmapFromFile(String name, int reqWidth) {
+        if (name == null || name.isEmpty()) return null;
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(name, options);
+        options.inSampleSize = calculateInSampleSize(options, reqWidth);
+        options.inJustDecodeBounds = false;
+        Bitmap src = BitmapFactory.decodeFile(name, options);
         return scaleBitmap(src, reqWidth);
     }
 
