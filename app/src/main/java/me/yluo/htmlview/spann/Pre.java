@@ -9,7 +9,7 @@ import android.text.style.CharacterStyle;
 import android.text.style.LineBackgroundSpan;
 
 public class Pre extends CharacterStyle implements LineBackgroundSpan {
-    //    padding: 16px;
+    //padding: 16px;
     //overflow: auto;
     //font-size: 85%;
     //line-height: 1.45;

@@ -3,6 +3,13 @@ package me.yluo.htmlview;
 import java.util.Hashtable;
 import java.util.Locale;
 
+/**
+ * html属性解析器
+ * 对症下药
+ * a - > href
+ * img -> src
+ * font -> color...
+ */
 public class AttrParser {
 
     private static final Hashtable<String, Integer> sColorMap;
@@ -34,31 +41,20 @@ public class AttrParser {
     }
 
     public static HtmlNode.HtmlAttr parserAttr(int type, char[] buf, int len) {
+        HtmlNode.HtmlAttr attr = new HtmlNode.HtmlAttr();
         String attrStr = new String(buf, 0, len);
-
-        String src = null;
-        if (type == HtmlTag.IMG) {
-            src = getAttrs(attrStr, 0, "src");
+        switch (type) {
+            case HtmlTag.A:
+                attr.href = getAttrs(attrStr, 0, "href");
+                break;
+            case HtmlTag.IMG:
+                attr.src = getAttrs(attrStr, 0, "src");
+                break;
+            case HtmlTag.FONT:
+            case HtmlTag.P:
+                attr.color = getTextColor(attrStr, 0);
+                break;
         }
-
-        String url = null;
-        if (type == HtmlTag.A) {
-            url = getAttrs(attrStr, 0, "href");
-        }
-
-        int color = -1;
-        if (type == HtmlTag.FONT || type == HtmlTag.P) {
-            color = getTextColor(attrStr, 0);
-        }
-
-        HtmlNode.HtmlAttr attr = null;
-        if (src != null || url != null || color >= 0) {
-            attr = new HtmlNode.HtmlAttr();
-            attr.href = url;
-            attr.src = src;
-            attr.color = color;
-        }
-
         return attr;
     }
 

@@ -1,41 +1,27 @@
 package me.yluo.htmlview.spann;
 
-import android.content.ActivityNotFoundException;
-import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
-import android.provider.Browser;
 import android.text.TextPaint;
-import android.text.style.URLSpan;
-import android.util.Log;
+import android.text.style.ClickableSpan;
 import android.view.View;
 
+import me.yluo.htmlview.HtmlTag;
 import me.yluo.htmlview.HtmlView;
+import me.yluo.htmlview.callback.SpanClickListener;
 
 
-public class Link extends URLSpan {
-
-    //    color: #4078c0;
-    //text-decoration: none;
-
+public class Link extends ClickableSpan {
     private final String url;
+    private final SpanClickListener listener;
 
-    public Link(String url) {
-        super(url);
+    public Link(String url, SpanClickListener listener) {
         this.url = url;
+        this.listener = listener;
     }
 
     @Override
     public void onClick(View widget) {
-        System.out.println("link clcik");
-        Uri uri = Uri.parse(url);
-        Context context = widget.getContext();
-        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        intent.putExtra(Browser.EXTRA_APPLICATION_ID, context.getPackageName());
-        try {
-            context.startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            Log.w("URLSpan", "Actvity was not found for intent, " + intent.toString());
+        if (listener != null && url != null && !url.isEmpty()) {
+            listener.onSpanClick(HtmlTag.A, url);
         }
     }
 

@@ -11,6 +11,7 @@ import java.util.Stack;
 
 import me.yluo.htmlview.callback.ImageGetter;
 import me.yluo.htmlview.callback.ImageGetterCallBack;
+import me.yluo.htmlview.callback.SpanClickListener;
 import me.yluo.htmlview.callback.ViewChangeNotify;
 import me.yluo.htmlview.spann.Bold;
 import me.yluo.htmlview.spann.Code;
@@ -23,6 +24,7 @@ import me.yluo.htmlview.spann.Link;
 import me.yluo.htmlview.spann.Pre;
 import me.yluo.htmlview.spann.Quote;
 import me.yluo.htmlview.spann.Strike;
+import me.yluo.htmlview.spann.StyleSpan;
 import me.yluo.htmlview.spann.Sub;
 import me.yluo.htmlview.spann.Super;
 import me.yluo.htmlview.spann.UnderLine;
@@ -32,14 +34,17 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
     private String mSource;
     private SpannableStringBuilder spannedBuilder;
     private ImageGetter imageGetter;
+    private SpanClickListener clickListener;
     private HtmlParser parser;
     private Stack<HtmlNode> nodes;
     private ViewChangeNotify notify;
     private int position;
 
-    private SpanConverter(String source, ImageGetter imageGetter, ViewChangeNotify notify) {
+    private SpanConverter(String source, ImageGetter imageGetter,
+                          SpanClickListener listener, ViewChangeNotify notify) {
         mSource = source;
         this.imageGetter = imageGetter;
+        this.clickListener = listener;
         parser = new HtmlParser();
         nodes = new Stack<>();
         parser.setHandler(this);
@@ -47,8 +52,10 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
         this.notify = notify;
     }
 
-    public static Spanned convert(String source, ImageGetter imageGetter, ViewChangeNotify notify) {
-        SpanConverter converter = new SpanConverter(source, imageGetter, notify);
+    public static Spanned convert(String source, ImageGetter imageGetter,
+                                  SpanClickListener listener, ViewChangeNotify notify) {
+
+        SpanConverter converter = new SpanConverter(source, imageGetter, listener, notify);
         return converter.startConvert();
     }
 
@@ -63,19 +70,13 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
 
     @Override
     public void startDocument(int len) {
-        Log.e("==", "startDocument");
+        Log.d(TAG, "startDocument");
         spannedBuilder = new SpannableStringBuilder();
-    }
-
-
-    @Override
-    public void endDocument() {
-        Log.e("==", "endDocument");
     }
 
     @Override
     public void startElement(HtmlNode node) {
-        Log.e("==", "startElement " + node.name);
+        Log.d(TAG, "startElement " + node.name);
         if (HtmlTag.isBolckTag(node.type)) {
             handleBlockTag(node.type, true);
         }
@@ -86,7 +87,7 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
                 handleBlockTag(node.type, false);
                 break;
             case HtmlTag.IMG:
-                handleImage(position, node.attr.src, 0);
+                handleImage(position, node.attr.src);
                 break;
             case HtmlTag.HR:
                 handleHr(position);
@@ -100,7 +101,7 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
 
     @Override
     public void characters(char ch[], int start, int length) {
-        Log.e("==", "characters " + new String(ch, start, length));
+        Log.d(TAG, "characters " + new String(ch, start, length));
         spannedBuilder.append(new String(ch, start, length));
         position += length;
         //还要根据栈顶的元素类型添加适当的\n
@@ -108,18 +109,21 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
 
     @Override
     public void endElement(int type, String name) {
-        Log.e("==", "endElement " + name);
+        Log.d(TAG, "endElement " + name);
         if (type == HtmlTag.UNKNOWN
                 || type == HtmlTag.BR
                 || type == HtmlTag.IMG
-                || type == HtmlTag.HR) {
+                || type == HtmlTag.HR
+                || nodes.isEmpty()) {
             return;
         }
 
-        int start = 0;
-        if (!nodes.isEmpty() && nodes.peek().type == type) {
-            start = nodes.pop().start;
+        if (nodes.peek().type != type) {
+            return;
         }
+
+        HtmlNode node = nodes.pop();
+        int start = node.start;
 
         switch (type) {
             case HtmlTag.H1:
@@ -131,13 +135,14 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
                 handleHeading(start, type - HtmlTag.H1 + 1);
                 break;
             case HtmlTag.P:
+                handleStyle(start, node.attr);
                 break;
             case HtmlTag.B:
             case HtmlTag.STRONG:
                 setSpan(start, new Bold());
                 break;
             case HtmlTag.A:
-                handleUrl(start, "http://www.baidu.com/");
+                handleUrl(start, node.attr.href);
                 break;
             case HtmlTag.I:
             case HtmlTag.EM:
@@ -208,6 +213,11 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
         }
     }
 
+    @Override
+    public void endDocument() {
+        Log.d(TAG, "endDocument");
+    }
+
     private void handleBlockTag(int type, boolean start) {
         if (position <= 0) return;
         if (spannedBuilder.charAt(position - 1) != '\n') {
@@ -222,15 +232,20 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
         //spannedBuilder.setSpan(new StyleSpan(Typeface.BOLD), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
+    private void handleStyle(int start, HtmlNode.HtmlAttr attr) {
+        if (attr == null) return;
+        spannedBuilder.setSpan(new StyleSpan(attr.color, -1), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
     private void handleBlockquote(int start) {
         spannedBuilder.setSpan(new Quote(), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
     private void handleUrl(int start, String url) {
-        spannedBuilder.setSpan(new Link(url), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        spannedBuilder.setSpan(new Link(url, clickListener), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
-    private void handleImage(int start, String url, int maxWidth) {
+    private void handleImage(int start, String url) {
         spannedBuilder.append("\uFFFC");
         position++;
 

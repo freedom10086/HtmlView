@@ -13,11 +13,9 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         TextView t = (TextView) findViewById(R.id.text);
 
         String text = "";
-
         try {
             InputStream in = getAssets().open("TestHtml.html");
             int size = in.available();
@@ -29,8 +27,6 @@ public class MainActivity extends Activity {
             e.printStackTrace();
         }
         HtmlView.parseHtml(text).into(t);
-
-
     }
 
 

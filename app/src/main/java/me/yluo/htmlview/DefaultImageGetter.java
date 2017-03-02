@@ -7,14 +7,10 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.text.Spanned;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -36,6 +32,7 @@ public class DefaultImageGetter implements ImageGetter {
     private int maxWidth;//最大宽度 图片不要大于这个值
     private static Set<BitmapWorkerTask> taskCollection;
     private static ExecutorService mPool;
+    private final int smileySize;//限制表情最大值
 
     static {
         taskCollection = new HashSet<>();
@@ -50,6 +47,7 @@ public class DefaultImageGetter implements ImageGetter {
         this.context = context;
         this.maxWidth = maxWidth;
         imageCacher = ImageCacher.instance(context.getCacheDir() + "/imageCache/");
+        smileySize = (int) (HtmlView.FONT_SIZE * 2.5f);
     }
 
 
@@ -61,7 +59,8 @@ public class DefaultImageGetter implements ImageGetter {
         if (b == null) {
             if (source.startsWith("smiley/")) {
                 try {
-                    b = decodeBitmapFromStream(context.getAssets().open(source), maxWidth);
+                    //b = BitmapFactory.decodeStream(context.getAssets().open(source));
+                    b = decodeBitmapFromStream(context.getAssets().open(source), false, smileySize);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -195,41 +194,47 @@ public class DefaultImageGetter implements ImageGetter {
     //// TODO: 2017/2/22
     private Drawable getPlaceHolder(String souce) {
         ColorDrawable colorDrawable = new ColorDrawable(0xffcccccc);
-        colorDrawable.setBounds(0, 0, 500, 300);
+        if (souce == null || souce.isEmpty()) {
+            colorDrawable.setBounds(0, 0, 120, 120);
+        } else if (souce.startsWith("/smiley")) {
+            colorDrawable.setBounds(0, 0, smileySize, smileySize);
+        } else {
+            colorDrawable.setBounds(0, 0, maxWidth, maxWidth / 2);
+        }
+
         return colorDrawable;
     }
 
 
-    public static Bitmap decodeBitmapFromStream(InputStream is, int reqWidth) {
+    public static Bitmap decodeBitmapFromStream(InputStream is, boolean needScale, int reqWidth) {
         if (is == null) return null;
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeStream(is, null, options);
-        options.inSampleSize = calculateInSampleSize(options, reqWidth);
-        options.inJustDecodeBounds = false;
-        Bitmap src = BitmapFactory.decodeStream(is, null, options);
-        return scaleBitmap(src, reqWidth);
+        if (needScale) {
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(is, null, options);
+            options.inSampleSize = calculateInSampleSize(options, reqWidth);
+            options.inJustDecodeBounds = false;
+            Bitmap src = BitmapFactory.decodeStream(is, null, options);
+            return scaleBitmap(src, reqWidth);
+        } else {
+            Bitmap src = BitmapFactory.decodeStream(is);
+            return scaleBitmap(src, reqWidth);
+        }
     }
 
-    public static Bitmap decodeBitmapFromFile(String name, int reqWidth) {
-        if (name == null || name.isEmpty()) return null;
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(name, options);
-        options.inSampleSize = calculateInSampleSize(options, reqWidth);
-        options.inJustDecodeBounds = false;
-        Bitmap src = BitmapFactory.decodeFile(name, options);
-        return scaleBitmap(src, reqWidth);
-    }
-
-    public static Bitmap decodeBitmapFromRes(Resources res, int resId, int reqWidth) {
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true; // 设置成了true,不占用内存，只获取bitmap宽高
-        BitmapFactory.decodeResource(res, resId, options); // 第一次解码
-        options.inSampleSize = calculateInSampleSize(options, reqWidth);
-        options.inJustDecodeBounds = false;
-        Bitmap src = BitmapFactory.decodeResource(res, resId, options);
-        return scaleBitmap(src, reqWidth);
+    public static Bitmap decodeBitmapFromRes(Resources res, int resId, boolean needScale, int reqWidth) {
+        if (needScale) {
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeResource(res, resId, options);
+            options.inSampleSize = calculateInSampleSize(options, reqWidth);
+            options.inJustDecodeBounds = false;
+            Bitmap src = BitmapFactory.decodeResource(res, resId, options);
+            return scaleBitmap(src, reqWidth);
+        } else {
+            Bitmap src = BitmapFactory.decodeResource(res, resId);
+            return scaleBitmap(src, reqWidth);
+        }
     }
 
     private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth) {

@@ -3,6 +3,7 @@ package me.yluo.htmlview;
 import android.content.Context;
 import android.graphics.Point;
 import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -10,6 +11,7 @@ import android.widget.TextView;
 import java.lang.ref.WeakReference;
 
 import me.yluo.htmlview.callback.ImageGetter;
+import me.yluo.htmlview.callback.SpanClickListener;
 import me.yluo.htmlview.callback.ViewChangeNotify;
 
 
@@ -24,6 +26,7 @@ public class HtmlView implements ViewChangeNotify {
 
     private String source;
     private ImageGetter imageGetter;
+    private SpanClickListener clickListener;
     private boolean isViewSet;
     private WeakReference<TextView> target;
     private Spanned spanned;
@@ -42,6 +45,11 @@ public class HtmlView implements ViewChangeNotify {
         return this;
     }
 
+    public HtmlView setSpanClickListener(SpanClickListener listener) {
+        this.clickListener = listener;
+        return this;
+    }
+
     public void into(TextView target) {
         if (this.target == null) {
             this.target = new WeakReference<>(target);
@@ -55,8 +63,13 @@ public class HtmlView implements ViewChangeNotify {
             imageGetter = new DefaultImageGetter(VIEW_WIDTH, target.getContext());
         }
 
+        if (clickListener == null) {
+            clickListener = new DefaultClickHandler(target.getContext());
+        }
+
         FONT_SIZE = target.getTextSize();
-        spanned = SpanConverter.convert(source, imageGetter, this);
+        spanned = SpanConverter.convert(source, imageGetter, clickListener, this);
+        target.setMovementMethod(LinkMovementMethod.getInstance());
         target.setTextColor(TEXT_COLOR);
         target.setLineSpacing(0, LINE_HEIGHT);
         target.setText(spanned);
@@ -68,17 +81,17 @@ public class HtmlView implements ViewChangeNotify {
     public void notifyViewChange() {
         if (target == null) return;
         final TextView t = target.get();
-
         if (isViewSet && t != null && spanned != null) {
-            t.post(new Runnable() {
-                @Override
-                public void run() {
-                    t.setText(spanned);
-                    Log.d(TAG, "notifyViewChange postInvalidateDelayed");
-                }
-            });
-        } else {
-            Log.d(TAG, "notifyViewChange is not set view do nothing");
+            t.removeCallbacks(updateRunable);
+            t.postDelayed(updateRunable, 200);
         }
     }
+
+    private Runnable updateRunable = new Runnable() {
+        public void run() {
+            final TextView t = target.get();
+            t.setText(spanned);
+            Log.d(TAG, "notifyViewChange postInvalidateDelayed");
+        }
+    };
 }
