@@ -17,7 +17,7 @@ public class MainActivity extends Activity {
 
         String text = "";
         try {
-            InputStream in = getAssets().open("TestHtml.html");
+            InputStream in = getAssets().open("TestHtml2.html");
             int size = in.available();
             byte[] buffer = new byte[size];
             in.read(buffer);
@@ -26,6 +26,8 @@ public class MainActivity extends Activity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+
         HtmlView.parseHtml(text).into(t);
     }
 

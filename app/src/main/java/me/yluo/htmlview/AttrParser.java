@@ -1,5 +1,7 @@
 package me.yluo.htmlview;
 
+import android.util.Log;
+
 import java.util.Hashtable;
 import java.util.Locale;
 
@@ -13,7 +15,7 @@ import java.util.Locale;
 public class AttrParser {
 
     private static final Hashtable<String, Integer> sColorMap;
-    private static final int COLOR_NONE = -1;
+    public static final int COLOR_NONE = 0;
 
     static {
         sColorMap = new Hashtable<>();
@@ -83,12 +85,11 @@ public class AttrParser {
     //attr css
     private static int getTextColor(String s, int start) {
         int j = getValidStrPos(s, start, "color", 10);
-        if (j < 0) return -1;
+        Log.d("====", s + "|" + start + "|" + j);
+        if (j < 0) return COLOR_NONE;
         //color 排除background-color bgcolor
-        if (j > start + 5
-                && (s.charAt(j - 6) == '-')
-                || (s.charAt(j - 6) == 'g')) {
-            return -1;
+        if (j > start + 5 && ((s.charAt(j - 6) == '-') || (s.charAt(j - 6) == 'g'))) {
+            return COLOR_NONE;
         }
 
         while (j < s.length() - 3) {
@@ -128,13 +129,13 @@ public class AttrParser {
                 return getHtmlColor(j, start, s);
             } else {
                 if (s.charAt(j) == '\"') {
-                    return -1;
+                    return COLOR_NONE;
                 }
                 j++;
             }
         }
 
-        return -1;
+        return COLOR_NONE;
     }
 
     //text-decoration:none underline overline line-through
@@ -188,7 +189,7 @@ public class AttrParser {
                         i++;
                     }
                     if (i - j >= 0 && i < source.length()) {
-                        return source.substring(j, i + 1);
+                        return source.substring(j, i);
                     } else {
                         return source.substring(j, source.length());
                     }
@@ -203,14 +204,14 @@ public class AttrParser {
 
     //html color-> android color
     private static int getHtmlColor(int start, int end, String color) {
-        if (end - start < 3) return -1;
+        if (end - start < 3) return COLOR_NONE;
         if (color.charAt(start) == '#') {
             if (end - start == 9) start += 2;
             if (end - start == 7) {
                 int colorInt = Integer.parseInt(color.substring(start + 1, end), 16);
                 return (colorInt | 0xff000000);
             }
-            return -1;
+            return COLOR_NONE;
         } else {
             Integer i = sColorMap.get(color.substring(start, end).toLowerCase(Locale.US));
             if (i != null) {

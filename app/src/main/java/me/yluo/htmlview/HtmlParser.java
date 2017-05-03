@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.Hashtable;
 
 
 /**
@@ -16,17 +15,9 @@ import java.util.Hashtable;
  */
 public class HtmlParser {
     private static final char EOF = (char) -1;
-    private static final Hashtable replaceMap = new Hashtable();
     private static final int MAX_TAG_LEN = 16;
     private static final int MAX_ATTR_LEN = 256;
 
-    static {
-        replaceMap.put("amp", "&");
-        replaceMap.put("apos", "'");
-        replaceMap.put("gt", ">");
-        replaceMap.put("lt", "<");
-        replaceMap.put("quot", "\"");
-    }
 
     //pre 标签的层数0-no >0 有
     private int preLevel = 0;
@@ -182,7 +173,7 @@ public class HtmlParser {
             //说明attr长度大于等于5为有效attr
             HtmlNode.HtmlAttr attr = null;
             if (bufPos >= 5) {
-                attr = AttrParser.parserAttr(type,buf, bufPos);
+                attr = AttrParser.parserAttr(type, buf, bufPos);
             }
             handler.startElement(new HtmlNode(type, name, attr));
         }
@@ -244,12 +235,182 @@ public class HtmlParser {
     }
 
     //解析文字
+    //处理转义
+    //&amp; "&"
+    //&apos;  "'"
+    //&gt; ">"
+    //&lt; "<"
+    //&quot; "\"
+    //&nbsp; ' '
     private void parseText() {
         bufPos = 0;
         while (readItem != EOF && readItem != '<' && readItem != '>') {
             if (preLevel > 0 && bufPos > 0) {//pre 标签 原封不动push
                 pushText(readItem);
             } else {
+                //转义
+                if (readItem == '&') {//&nbsp;
+                    read();
+                    if (readItem != EOF && readItem == 'n') {
+                        read();
+                        if (readItem != EOF && readItem == 'b') {
+                            read();
+                            if (readItem != EOF && readItem == 's') {
+                                read();
+                                if (readItem != EOF && readItem == 'p') {
+                                    read();
+                                    if (readItem != EOF && readItem == ';') {
+                                        pushText(' '); //&nbsp;
+                                        read();
+                                        continue;//强制空格
+                                    } else {
+                                        pushText('&');
+                                        pushText('n');
+                                        pushText('b');
+                                        pushText('s');
+                                        pushText('p');
+                                    }
+                                } else {
+                                    pushText('&');
+                                    pushText('n');
+                                    pushText('b');
+                                    pushText('s');
+                                }
+                            } else {
+                                pushText('&');
+                                pushText('n');
+                                pushText('b');
+                            }
+                        } else {
+                            pushText('&');
+                            pushText('n');
+                        }
+                    } else if (readItem != EOF && readItem == 'a') { //&amp; &apos;
+                        read();
+                        if (readItem != EOF && readItem == 'm') {//&amp;
+                            read();
+                            if (readItem != EOF && readItem == 'p') {//&amp;
+                                read();
+                                if (readItem != EOF && readItem == ';') {//&amp;
+                                    pushText('&'); //&nbsp;
+                                    read();
+                                    continue;
+                                } else {
+                                    pushText('&');
+                                    pushText('a');
+                                    pushText('m');
+                                    pushText('p');
+                                }
+                            } else {
+                                pushText('&');
+                                pushText('a');
+                                pushText('m');
+                            }
+                        } else if (readItem != EOF && readItem == 'p') {//&apos;
+                            read();
+                            if (readItem != EOF && readItem == 'o') {//&apos;
+                                read();
+                                if (readItem != EOF && readItem == 's') {//&apos;
+                                    read();
+                                    if (readItem != EOF && readItem == ';') {
+                                        pushText('\''); //&apos;
+                                        read();
+                                        continue;
+                                    } else {
+                                        pushText('&');
+                                        pushText('a');
+                                        pushText('p');
+                                        pushText('o');
+                                        pushText('s');
+                                    }
+                                } else {
+                                    pushText('&');
+                                    pushText('a');
+                                    pushText('p');
+                                    pushText('o');
+                                }
+                            } else {
+                                pushText('&');
+                                pushText('a');
+                                pushText('p');
+                            }
+                        } else {
+                            pushText('&');
+                            pushText('a');
+                        }
+                    } else if (readItem != EOF && readItem == 'g') {//&gt;
+                        read();
+                        if (readItem != EOF && readItem == 't') {
+                            read();
+                            if (readItem != EOF && readItem == ';') {
+                                pushText('>'); //&gt;
+                                read();
+                                continue;
+                            } else {
+                                pushText('&');
+                                pushText('g');
+                                pushText('t');
+                            }
+                        } else {
+                            pushText('&');
+                            pushText('g');
+                        }
+                    } else if (readItem != EOF && readItem == 'l') {//&lt;
+                        read();
+                        if (readItem != EOF && readItem == 't') {
+                            read();
+                            if (readItem != EOF && readItem == ';') {
+                                pushText('<'); //&lt;
+                                read();
+                                continue;
+                            } else {
+                                pushText('&');
+                                pushText('l');
+                                pushText('t');
+                            }
+                        } else {
+                            pushText('&');
+                            pushText('l');
+                        }
+                    } else if (readItem != EOF && readItem == 'q') {//&quot;
+                        read();
+                        if (readItem != EOF && readItem == 'u') {
+                            read();
+                            if (readItem != EOF && readItem == 'o') {
+                                read();
+                                if (readItem != EOF && readItem == 't') {
+                                    read();
+                                    if (readItem != EOF && readItem == ';') {
+                                        pushText('\\'); //&nbsp;
+                                        read();
+                                        continue;
+                                    } else {
+                                        pushText('&');
+                                        pushText('q');
+                                        pushText('u');
+                                        pushText('o');
+                                        pushText('t');
+                                    }
+                                } else {
+                                    pushText('&');
+                                    pushText('q');
+                                    pushText('u');
+                                    pushText('o');
+                                }
+                            } else {
+                                pushText('&');
+                                pushText('q');
+                                pushText('u');
+                            }
+                        } else {
+                            pushText('&');
+                            pushText('q');
+                        }
+                    } else {
+                        pushText('&');
+                    }
+                }
+
                 if (readItem == ' ' || readItem == '\n') {
                     if (bufPos != 0 && buf[(bufPos - 1)] != ' ') {
                         readItem = ' ';
@@ -264,7 +425,6 @@ public class HtmlParser {
 
         //不是空
         if (bufPos > 0 && handler != null) {
-            //String s = new String(buf, 0, bufPos);
             handler.characters(buf, 0, bufPos);
         }
     }

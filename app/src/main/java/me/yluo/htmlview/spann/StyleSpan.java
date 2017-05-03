@@ -4,6 +4,8 @@ import android.text.TextPaint;
 import android.text.style.CharacterStyle;
 import android.text.style.UpdateAppearance;
 
+import me.yluo.htmlview.AttrParser;
+
 //如果值为-1代表没有
 // TODO: 2017/3/2 支持更多的style
 public class StyleSpan extends CharacterStyle
@@ -21,9 +23,10 @@ public class StyleSpan extends CharacterStyle
         this.fontSize = fontSize;
     }
 
+
     @Override
     public void updateDrawState(TextPaint tp) {
-        if (color != -1) {
+        if (color != AttrParser.COLOR_NONE) {
             tp.setColor(color);
         }
 
