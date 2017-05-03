@@ -28,8 +28,9 @@ public class HtmlView implements ViewChangeNotify {
     private ImageGetter imageGetter;
     private SpanClickListener clickListener;
     private boolean isViewSet;
-    private WeakReference<TextView> target;
     private Spanned spanned;
+
+    private WeakReference<TextView> target;
 
     private HtmlView(String source) {
         this.source = source;
@@ -54,13 +55,15 @@ public class HtmlView implements ViewChangeNotify {
         if (this.target == null) {
             this.target = new WeakReference<>(target);
         }
+
+
         if (imageGetter == null) {
             WindowManager wm = (WindowManager) target.getContext()
                     .getSystemService(Context.WINDOW_SERVICE);
             Point p = new Point();
             wm.getDefaultDisplay().getSize(p);
             VIEW_WIDTH = p.x - target.getPaddingStart() - target.getPaddingEnd();
-            imageGetter = new DefaultImageGetter(VIEW_WIDTH, target.getContext());
+            imageGetter = new DefaultImageGetter("http://rs.xidian.edu.cn/", VIEW_WIDTH, target.getContext());
         }
 
         if (clickListener == null) {
@@ -82,6 +85,7 @@ public class HtmlView implements ViewChangeNotify {
         if (target == null) return;
         final TextView t = target.get();
         if (isViewSet && t != null && spanned != null) {
+            //这儿会有索引越界
             t.removeCallbacks(updateRunable);
             t.postDelayed(updateRunable, 200);
         }
@@ -94,4 +98,5 @@ public class HtmlView implements ViewChangeNotify {
             Log.d(TAG, "notifyViewChange postInvalidateDelayed");
         }
     };
+
 }

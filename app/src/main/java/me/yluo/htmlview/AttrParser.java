@@ -71,14 +71,14 @@ public class AttrParser {
             }
 
             if (s.startsWith("right", i)) {
-                return 2;
+                return HtmlNode.ALIGN_RIGHT;
             } else if (s.startsWith("center", i)) {
-                return 1;
+                return HtmlNode.ALIGN_CENTER;
             } else if (s.startsWith("left", i)) {
-                return 0;
+                return HtmlNode.ALIGN_LEFT;
             }
         }
-        return -1;
+        return HtmlNode.ALIGN_UNDEFINE;
     }
 
     //color="red" " color:red "
@@ -153,14 +153,13 @@ public class AttrParser {
         }
 
         if (s.startsWith("underline", j)) {
-            return 1;
+            return HtmlNode.DEC_UNDERLINE;
         } else if (s.startsWith("line-through", j)) {
-            return 2;
+            return HtmlNode.DEC_LINE_THROUGH;
         } else if (s.startsWith("none", j)) {
-            return 0;
+            return HtmlNode.DEC_NONE;
         }
-
-        return -1;
+        return HtmlNode.DEC_UNDEFINE;
     }
 
 

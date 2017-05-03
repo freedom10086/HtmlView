@@ -33,6 +33,7 @@ public class DefaultImageGetter implements ImageGetter {
     private static Set<BitmapWorkerTask> taskCollection;
     private static ExecutorService mPool;
     private final int smileySize;//限制表情最大值
+    private String baseUrl;
 
     static {
         taskCollection = new HashSet<>();
@@ -43,11 +44,12 @@ public class DefaultImageGetter implements ImageGetter {
     }
 
 
-    public DefaultImageGetter(int maxWidth, Context context) {
+    public DefaultImageGetter(String baseUrl, int maxWidth, Context context) {
         this.context = context;
         this.maxWidth = maxWidth;
         imageCacher = ImageCacher.instance(context.getCacheDir() + "/imageCache/");
         smileySize = (int) (HtmlView.FONT_SIZE * 2.5f);
+        this.baseUrl = baseUrl == null ? "" : baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
     }
 
 
@@ -128,7 +130,8 @@ public class DefaultImageGetter implements ImageGetter {
             BufferedInputStream in = null;
             Bitmap bitmap = null;
             try {
-                final URL url = new URL(imageUrl);
+                //todo url不合法就别下了
+                final URL url = new URL(imageUrl.startsWith("http") ? imageUrl : baseUrl + imageUrl);
                 urlConnection = (HttpURLConnection) url.openConnection();
                 in = new BufferedInputStream(urlConnection.getInputStream(), 4 * 1024);
                 //bitmap = decodeBitmapFromStream(in, maxWidth);

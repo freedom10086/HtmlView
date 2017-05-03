@@ -184,6 +184,7 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
             case HtmlTag.SPAN:
                 break;
             case HtmlTag.FONT:
+                handleStyle(start, node.attr);
                 break;
             case HtmlTag.BIG:
                 break;
@@ -246,6 +247,7 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
     }
 
     private void handleImage(int start, String url) {
+        Log.e(">>>>>>>","start "+start);
         spannedBuilder.append("\uFFFC");
         position++;
 
@@ -271,15 +273,13 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
 
     @Override
     public void onImageReady(String source, int start, int end, Drawable d) {
-        Log.d(TAG, "onImageReady: " + source + " position: " + start + "," + end);
+        Log.e(TAG, "onImageReady: " + source + " position: " + start + "," + end);
         Image[] is = spannedBuilder.getSpans(start, end, Image.class);
         for (Image i : is) {
             spannedBuilder.removeSpan(i);
         }
-
         spannedBuilder.setSpan(new Image(source, d), start, end,
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         notify.notifyViewChange();
-
     }
 }

@@ -1,9 +1,13 @@
 package me.yluo.htmlview;
 
+import android.util.Log;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.Objects;
+import java.util.Stack;
 
 
 /**
@@ -30,8 +34,10 @@ public class HtmlParser {
     private char[] buf;
     private char readItem = EOF, lastRead = EOF;
     private ParserCallback handler;
+    private Stack<HtmlNode> stack;
 
     public HtmlParser() {
+        stack = new Stack<>();
     }
 
     public void setHandler(ParserCallback handler) {
@@ -42,6 +48,7 @@ public class HtmlParser {
         if (handler == null) {
             throw new NullPointerException("you must set ParserCallback");
         }
+
         int len = is.available();
         len = len < 1024 ? 1024 : (len < 4096 ? 4096 : 6114);
         srcBuf = new char[len];
@@ -49,6 +56,7 @@ public class HtmlParser {
         this.reader = new InputStreamReader(is, "UTF-8");
         srcPos = 0;
         srcCount = 0;
+        stack.clear();
         parse();
     }
 
@@ -60,7 +68,8 @@ public class HtmlParser {
         srcPos = 0;
         srcCount = srcBuf.length;
         int len = srcBuf.length;
-        len = len < 2048 ? 1024 : 2048;
+        stack.clear();
+        len = len < 2048 ? len : 2048;
         buf = new char[len];
         parse();
     }
@@ -73,7 +82,6 @@ public class HtmlParser {
         } else {
             handler.startDocument(srcBuf.length);
         }
-
         read();
         while (readItem != EOF) {
             switch (readItem) {
@@ -123,6 +131,7 @@ public class HtmlParser {
     }
 
     //解析开始标签<a> <img /> <x a="b" c="d" e>
+    //单标签只有开始
     private void parseStartTag() {
         if ((readItem < 'a' || readItem > 'z')
                 && (readItem < 'A' || readItem > 'Z')) {
@@ -175,7 +184,10 @@ public class HtmlParser {
             if (bufPos >= 5) {
                 attr = AttrParser.parserAttr(type, buf, bufPos);
             }
-            handler.startElement(new HtmlNode(type, name, attr));
+
+            HtmlNode n = new HtmlNode(type, name, attr);
+            pushNode(n);
+            handler.startElement(n);
         }
     }
 
@@ -217,6 +229,8 @@ public class HtmlParser {
         if (type == HtmlTag.PRE && preLevel > 0) {
             preLevel--;
         }
+
+        popNode(type, s);
         handler.endElement(type, s);
     }
 
@@ -431,7 +445,10 @@ public class HtmlParser {
 
     //处理解析完成
     private void handleStop() {
-        // TODO: 2017/2/2 处理一些现在Stack里的内容
+        while (!stack.isEmpty()) {
+            HtmlNode n = stack.pop();
+            handler.endElement(n.type, n.name);
+        }
         readItem = EOF;
         handler.endDocument();
     }
@@ -712,4 +729,68 @@ public class HtmlParser {
         return HtmlTag.UNKNOWN;
     }
 
+    //压栈node到stack 更新节点属性
+    private void pushNode(HtmlNode node) {
+        //单标签不压栈,且属性也不继承
+        if (node.type == HtmlTag.IMG
+                || node.type == HtmlTag.BR
+                || node.type == HtmlTag.HR) {
+            return;
+        }
+
+        HtmlNode.HtmlAttr attr;
+        if (!stack.isEmpty() && (attr = stack.peek().attr) != null) {
+            if (node.attr == null) {
+                node.attr = attr;
+            } else {
+                //字体对其不继承
+                if (attr.color != AttrParser.COLOR_NONE) {
+                    node.attr.color = attr.color;
+                }
+
+                if (attr.textDecoration != HtmlNode.DEC_UNDEFINE) {
+                    node.attr.textAlign = attr.textDecoration;
+                }
+            }
+        }
+
+        //压栈
+        stack.push(node);
+        Log.w("push========", node.toString());
+    }
+
+    private void popNode(int type, String name) {
+        //这些节点不在栈
+        if (type == HtmlTag.IMG
+                || type == HtmlTag.BR
+                || type == HtmlTag.HR) {
+            return;
+        }
+
+        HtmlNode n;
+        if (!stack.isEmpty() && (n = stack.peek()) != null) {
+            //栈顶元素相同出栈
+            if (n.type == type && Objects.equals(n.name, name)) {
+                Log.w("pop========", n.toString());
+                stack.pop();
+            } else {//不相同 是出还是不出???
+                int i = stack.size() - 1;
+                for (; i > 0; i--) {
+                    if (stack.get(i).type == type && Objects.equals(stack.get(i).name, name)) {
+                        break;
+                    }
+                }
+
+                //栈里有 一直出栈
+                if (i > 0) {
+                    int j = stack.size() - 1;
+                    while (j != i - 1) {
+                        HtmlNode nn = stack.pop();
+                        Log.w("pop========", nn.toString());
+                        j--;
+                    }
+                }
+            }
+        }
+    }
 }
