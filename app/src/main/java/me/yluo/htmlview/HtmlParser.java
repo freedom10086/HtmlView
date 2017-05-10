@@ -183,6 +183,7 @@ public class HtmlParser {
             HtmlNode.HtmlAttr attr = null;
             if (bufPos >= 5) {
                 attr = AttrParser.parserAttr(type, buf, bufPos);
+                Log.d("==========", new String(buf, 0, bufPos));
             }
             HtmlNode n = new HtmlNode(type, name, attr);
             pushNode(n);
@@ -737,25 +738,25 @@ public class HtmlParser {
             return;
         }
 
-        HtmlNode.HtmlAttr attr;
-        if (!stack.isEmpty() && (attr = stack.peek().attr) != null) {
+        HtmlNode.HtmlAttr parentAttr;
+        if (!stack.isEmpty() && (parentAttr = stack.peek().attr) != null) {
             if (node.attr == null) {
-                node.attr = attr;
+                node.attr = parentAttr;
             } else {
-                //字体对其不继承
-                if (attr.color != AttrParser.COLOR_NONE) {
-                    node.attr.color = attr.color;
+                //字体颜色继承
+                if (node.attr.color == AttrParser.COLOR_NONE) {
+                    node.attr.color = parentAttr.color;
                 }
 
-                if (attr.textDecoration != HtmlNode.DEC_UNDEFINE) {
-                    node.attr.textAlign = attr.textDecoration;
+                // textDecoration 是否需要集成?
+                if (node.attr.textDecoration == HtmlNode.DEC_NONE) {
+                    node.attr.textDecoration = parentAttr.textDecoration;
                 }
             }
         }
 
         //压栈
         stack.push(node);
-        Log.w("push========", node.toString());
     }
 
     private void popNode(int type, String name) {
@@ -770,7 +771,6 @@ public class HtmlParser {
         if (!stack.isEmpty() && (n = stack.peek()) != null) {
             //栈顶元素相同出栈
             if (n.type == type && Objects.equals(n.name, name)) {
-                Log.w("pop========", n.toString());
                 stack.pop();
             } else {//不相同 是出还是不出???
                 int i = stack.size() - 1;
@@ -784,8 +784,7 @@ public class HtmlParser {
                 if (i > 0) {
                     int j = stack.size() - 1;
                     while (j != i - 1) {
-                        HtmlNode nn = stack.pop();
-                        Log.w("pop========", nn.toString());
+                        stack.pop();
                         j--;
                     }
                 }

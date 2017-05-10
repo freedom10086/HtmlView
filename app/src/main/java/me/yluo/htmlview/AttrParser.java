@@ -1,5 +1,7 @@
 package me.yluo.htmlview;
 
+import android.text.Spannable;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.util.Hashtable;
@@ -15,7 +17,8 @@ import java.util.Locale;
 public class AttrParser {
 
     private static final Hashtable<String, Integer> sColorMap;
-    public static final int COLOR_NONE = 0;
+    // TODO: 2017/5/10  有点不严谨
+    public static final int COLOR_NONE = 0x00000001;
 
     static {
         sColorMap = new Hashtable<>();
@@ -87,6 +90,7 @@ public class AttrParser {
                 break;
             case HtmlTag.FONT:
                 attr.color = getTextColor(attrStr, 0);
+                attr.fontSize = getFontSize(attrStr, 0);
             case HtmlTag.P://p 标签比较特殊 text-align 也可以是align
                 attr.color = getTextColor(attrStr, 0);
                 attr.textAlign = getAlign(true, attrStr, 0);
@@ -206,40 +210,48 @@ public class AttrParser {
         return HtmlNode.DEC_UNDEFINE;
     }
 
+    //size="5"
+    private static int getFontSize(String source, int start) {
+        String s = getAttrs(source, start, "size");
+        if (s == null) return -1;
+        if (TextUtils.isDigitsOnly(s)) {
+            return Integer.parseInt(s);
+        }
+
+        return -1;
+    }
+
 
     //a="b" src="" href=""
     private static String getAttrs(String source, int start, String to) {
-        if (source.length() - start - 5 < to.length()) return null;
+        if (source.length() - start - 4 < to.length()) return null;
         int j = getValidStrPos(source, start, to, to.length() + 4);
         if (j < 0) return null;
-        while (j < source.length() - 3) {
-            if (source.charAt(j) == '=') {
-                while (j < (source.length() - 3) && source.charAt(j) != '\"') {
-                    j++;
-                }
-                if (source.charAt(j) == '\"') {
-                    j++;
-                    while (j < (source.length() - 2)
-                            && (source.charAt(j) == ' '
-                            || source.charAt(j) == '\n')) {
-                        j++;
-                    }
-                    int i = j;
-                    while (i < source.length() - 2
-                            && source.charAt(i) != '\"'
-                            && source.charAt(i) != ' '
-                            && source.charAt(i) != '\n') {
-                        i++;
-                    }
-                    if (i - j >= 0 && i < source.length()) {
-                        return source.substring(j, i);
-                    } else {
-                        return source.substring(j, source.length());
-                    }
-                }
-                return null;
-            }
+        //="aaaa"
+        j = source.indexOf("=", j);
+        if (j < 0) return null;
+
+        j = source.indexOf("\"", j);
+        if (j < 0) return null;
+        j++;
+        if (j > source.length() - 2) return null;
+
+        while (j < (source.length() - 2)
+                && (source.charAt(j) == ' '
+                || source.charAt(j) == '\n')) {
             j++;
+        }
+
+        int pos2 = j + 1;
+        while (pos2 < source.length() - 1
+                && source.charAt(pos2) != '\"'
+                && source.charAt(pos2) != ' '
+                && source.charAt(pos2) != '\n') {
+            pos2++;
+        }
+
+        if (pos2 <= source.length() - 1) {
+            return source.substring(j, pos2);
         }
         return null;
     }

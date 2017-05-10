@@ -2,6 +2,7 @@ package me.yluo.htmlview;
 
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.AlignmentSpan;
@@ -259,13 +260,26 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
     //font 标签
     private void handleFont(int start, HtmlNode.HtmlAttr attr) {
         if (attr == null) return;
-        setSpan(start, new StyleSpan(attr.color, -1));
+
+        StyleSpan span;
+        Object[] spans = spannedBuilder.getSpans(start, position, StyleSpan.class);
+        if (spans != null && spans.length > 0) {
+            int pos1 = spannedBuilder.getSpanStart(spans[0]);
+            int pos2 = spannedBuilder.getSpanEnd(spans[0]);
+            if (pos1 == start && pos2 == position) {//一摸一样位置的同样font
+                span = (StyleSpan) spans[0];
+                span.updateStyle(attr);
+                return;
+            }
+        }
+
+        setSpan(start, new StyleSpan(attr));
     }
 
     //p 标签 text-align属性
     private void handleParagraph(int start, HtmlNode.HtmlAttr attr) {
         if (attr == null) return;
-        setSpan(start, new StyleSpan(attr.color, -1));
+        setSpan(start, new StyleSpan(attr));
 
         Layout.Alignment align;
         if (attr.textAlign == HtmlNode.ALIGN_LEFT) {
@@ -308,8 +322,7 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
 
 
     private void setSpan(int start, Object span) {
-        if (position <= start) return;
-        spannedBuilder.setSpan(span, start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        setSpan(start, position, span);
     }
 
     private void setSpan(int start, int end, Object span) {

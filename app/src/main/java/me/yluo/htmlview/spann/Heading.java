@@ -13,7 +13,7 @@ import me.yluo.htmlview.HtmlView;
 
 public class Heading extends MetricAffectingSpan implements LineHeightSpan, LineBackgroundSpan {
     private static final float[] TEXT_SIZE = new float[]{
-            1.8f, 1.5f, 1.25f, 1.0f, 0.875f, 0.85f
+            1.4f, 1.3f, 1.2f, 1.1f, 1.0f, 0.9f,
     };
 
     private static final int[] TEXT_COLOR = new int[]{

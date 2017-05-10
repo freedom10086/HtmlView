@@ -24,16 +24,18 @@ public class HtmlNode {
     }
 
     public static class HtmlAttr {
-        String src;//attr
-        String href;//attr
-        int color = AttrParser.COLOR_NONE;//css,attr color
-        int textAlign = ALIGN_UNDEFINE;
-        int textDecoration = DEC_UNDEFINE;
-        int align = ALIGN_UNDEFINE;//布局方向 block元素起作用
+        public String src;//attr
+        public String href;//attr
+        public int color = AttrParser.COLOR_NONE;//css,attr color
+        public int fontSize = -1;// TODO: 2017/5/10  
+        public int textAlign = ALIGN_UNDEFINE;
+        public int textDecoration = DEC_UNDEFINE;
+        public int align = ALIGN_UNDEFINE;//布局方向 block元素起作用
+        
 
         @Override
         public String toString() {
-            return "color:" + color
+            return "{color:" + color
                     + (src == null ? "" : ", src:" + src)
                     + (href == null ? "" : ", href:" + href) + "}";
         }
