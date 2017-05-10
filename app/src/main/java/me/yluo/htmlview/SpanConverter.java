@@ -1,9 +1,11 @@
 package me.yluo.htmlview;
 
 import android.graphics.drawable.Drawable;
-import android.text.Spannable;
+import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.style.AlignmentSpan;
+import android.text.style.TextAppearanceSpan;
 import android.util.Log;
 
 import java.io.IOException;
@@ -78,13 +80,13 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
     public void startElement(HtmlNode node) {
         Log.d(TAG, "startElement " + node.name);
         if (HtmlTag.isBolckTag(node.type)) {
-            handleBlockTag(node.type, true);
+            handleBlockTag(true, node.type, position, null);
         }
         switch (node.type) {
             case HtmlTag.UNKNOWN:
                 break;
             case HtmlTag.BR:
-                handleBlockTag(node.type, false);
+                handleBlockTag(false, node.type, position, node.attr);
                 break;
             case HtmlTag.IMG:
                 handleImage(position, node.attr.src);
@@ -135,7 +137,7 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
                 handleHeading(start, type - HtmlTag.H1 + 1);
                 break;
             case HtmlTag.P:
-                handleStyle(start, node.attr);
+                handleParagraph(start, node.attr);
                 break;
             case HtmlTag.B:
             case HtmlTag.STRONG:
@@ -184,7 +186,7 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
             case HtmlTag.SPAN:
                 break;
             case HtmlTag.FONT:
-                handleStyle(start, node.attr);
+                handleFont(start, node.attr);
                 break;
             case HtmlTag.BIG:
                 break;
@@ -210,7 +212,7 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
         }
 
         if (HtmlTag.isBolckTag(type)) {
-            handleBlockTag(type, false);
+            handleBlockTag(false, type, start, node.attr);
         }
     }
 
@@ -219,67 +221,110 @@ public class SpanConverter implements ParserCallback, ImageGetterCallBack {
         Log.d(TAG, "endDocument");
     }
 
-    private void handleBlockTag(int type, boolean start) {
+
+    //div ul 等块状标签
+    private void handleBlockTag(boolean isStart, int type, int start, HtmlNode.HtmlAttr attr) {
         if (position <= 0) return;
         if (spannedBuilder.charAt(position - 1) != '\n') {
             spannedBuilder.append('\n');
             position++;
         }
+
+        //结束block 标签
+        if (!isStart && attr != null) {
+            Layout.Alignment align;
+            if (attr.align == HtmlNode.ALIGN_LEFT) {
+                align = Layout.Alignment.ALIGN_NORMAL;
+            } else if (attr.align == HtmlNode.ALIGN_RIGHT) {
+                align = Layout.Alignment.ALIGN_OPPOSITE;
+            } else if (attr.align == HtmlNode.ALIGN_CENTER) {
+                align = Layout.Alignment.ALIGN_CENTER;
+            } else {
+                align = null;
+            }
+
+            if (align != null) {
+                setSpan(start, position, new AlignmentSpan.Standard(align));
+            }
+        }
     }
+
 
     //level h1-h6
     private void handleHeading(int start, int level) {
-        spannedBuilder.setSpan(new Heading(level), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        setSpan(start, new Heading(level));
         //spannedBuilder.setSpan(new StyleSpan(Typeface.BOLD), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
-    private void handleStyle(int start, HtmlNode.HtmlAttr attr) {
+    //font 标签
+    private void handleFont(int start, HtmlNode.HtmlAttr attr) {
         if (attr == null) return;
-        spannedBuilder.setSpan(new StyleSpan(attr.color, -1), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        setSpan(start, new StyleSpan(attr.color, -1));
+    }
+
+    //p 标签 text-align属性
+    private void handleParagraph(int start, HtmlNode.HtmlAttr attr) {
+        if (attr == null) return;
+        setSpan(start, new StyleSpan(attr.color, -1));
+
+        Layout.Alignment align;
+        if (attr.textAlign == HtmlNode.ALIGN_LEFT) {
+            align = Layout.Alignment.ALIGN_NORMAL;
+        } else if (attr.textAlign == HtmlNode.ALIGN_RIGHT) {
+            align = Layout.Alignment.ALIGN_OPPOSITE;
+        } else if (attr.textAlign == HtmlNode.ALIGN_CENTER) {
+            align = Layout.Alignment.ALIGN_CENTER;
+        } else {
+            align = null;
+        }
+
+        if (align != null) {
+            setSpan(start, position, new AlignmentSpan.Standard(align));
+        }
     }
 
     private void handleBlockquote(int start) {
-        spannedBuilder.setSpan(new Quote(), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        setSpan(start, new Quote());
     }
 
     private void handleUrl(int start, String url) {
-        spannedBuilder.setSpan(new Link(url, clickListener), start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        setSpan(start, new Link(url, clickListener));
     }
 
     private void handleImage(int start, String url) {
-        Log.e(">>>>>>>","start "+start);
+        Log.e(">>>>>>>", "start " + start);
         spannedBuilder.append("\uFFFC");
         position++;
-
         if (imageGetter != null) {
             imageGetter.getDrawable(url, start, position, this);
         }
     }
 
     private void handleHr(int start) {
-
         spannedBuilder.append(' ');
         position++;
-
-        spannedBuilder.setSpan(new Hr(), start, position,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        setSpan(start, new Hr());
     }
 
 
     private void setSpan(int start, Object span) {
+        if (position <= start) return;
         spannedBuilder.setSpan(span, start, position, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    private void setSpan(int start, int end, Object span) {
+        if (end <= start) return;
+        spannedBuilder.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
 
     @Override
     public void onImageReady(String source, int start, int end, Drawable d) {
-        Log.e(TAG, "onImageReady: " + source + " position: " + start + "," + end);
         Image[] is = spannedBuilder.getSpans(start, end, Image.class);
         for (Image i : is) {
             spannedBuilder.removeSpan(i);
         }
-        spannedBuilder.setSpan(new Image(source, d), start, end,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        setSpan(start, end, new Image(source, d));
         notify.notifyViewChange();
     }
 }

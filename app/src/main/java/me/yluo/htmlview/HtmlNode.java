@@ -29,6 +29,7 @@ public class HtmlNode {
         int color = AttrParser.COLOR_NONE;//css,attr color
         int textAlign = ALIGN_UNDEFINE;
         int textDecoration = DEC_UNDEFINE;
+        int align = ALIGN_UNDEFINE;//布局方向 block元素起作用
 
         @Override
         public String toString() {

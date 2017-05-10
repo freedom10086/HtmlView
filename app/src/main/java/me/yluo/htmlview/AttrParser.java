@@ -40,6 +40,33 @@ public class AttrParser {
         sColorMap.put("teal", 0xFF008080);
         sColorMap.put("white", 0xFFFFFFFF);
         sColorMap.put("yellow", 0xFFFFFF00);
+
+        //discuz
+        sColorMap.put("sienna", 0xFFA0522D);
+        sColorMap.put("darkolivegreen", 0xFF556B2F);
+        sColorMap.put("darkgreen", 0xFF006400);
+        sColorMap.put("darkslateblue", 0xFF483D8B);
+        sColorMap.put("indigo", 0xFF4B0082);
+        sColorMap.put("darkslategray", 0xFF2F4F4F);
+        sColorMap.put("darkred", 0xFF8B0000);
+        sColorMap.put("darkorange", 0xFFFF8C00);
+        sColorMap.put("slategray", 0xFF708090);
+        sColorMap.put("dimgray", 0xFF696969);
+        sColorMap.put("sandybrown", 0xFFF4A460);
+        sColorMap.put("yellowgreen", 0xFFADFF2F);
+        sColorMap.put("seagreen", 0xFF2E8B57);
+        sColorMap.put("mediumturquoise", 0xFF48D1CC);
+        sColorMap.put("royalblue", 0xFF4169E1);
+        sColorMap.put("magenta", 0xFFFF00FF);
+        sColorMap.put("cyan", 0xFF00FFFF);
+        sColorMap.put("deepskyblue", 0xFF00BFFF);
+        sColorMap.put("darkorchid", 0xFF9932CC);
+        sColorMap.put("pink", 0xFFFFC0CB);
+        sColorMap.put("wheat", 0xFFF5DEB3);
+        sColorMap.put("lemonchiffon", 0xFFFFFACD);
+        sColorMap.put("palegreen", 0xFF98FB98);
+        sColorMap.put("paleturquoise", 0xFFAFEEEE);
+        sColorMap.put("plum", 0xFFDDA0DD);
     }
 
     public static HtmlNode.HtmlAttr parserAttr(int type, char[] buf, int len) {
@@ -48,33 +75,51 @@ public class AttrParser {
         switch (type) {
             case HtmlTag.A:
                 attr.href = getAttrs(attrStr, 0, "href");
+                if (attr.href != null && attr.href.contains("&")) {
+                    attr.href = attr.href.replace("&amp;", "&");
+                }
                 break;
             case HtmlTag.IMG:
                 attr.src = getAttrs(attrStr, 0, "src");
+                if (attr.src != null && attr.src.contains("&")) {
+                    attr.src = attr.src.replace("&amp;", "&");
+                }
                 break;
             case HtmlTag.FONT:
-            case HtmlTag.P:
                 attr.color = getTextColor(attrStr, 0);
+            case HtmlTag.P://p 标签比较特殊 text-align 也可以是align
+                attr.color = getTextColor(attrStr, 0);
+                attr.textAlign = getAlign(true, attrStr, 0);
+                break;
+            case HtmlTag.DIV:
+            case HtmlTag.UL:
+                attr.align = getAlign(false, attrStr, 0);
                 break;
         }
         return attr;
     }
 
+
     //只有块状标签才有意义
     //left right center
-    //css
-    private static int getTextAlign(int i, String s) {
-        i = getValidStrPos(s, i, "text-align", 15);
-        if (i > 0) {
-            while (i < s.length() && (s.charAt(i) < 'a' || s.charAt(i) > 'z')) {
-                i++;
-            }
+    //内部布局  align="center"
+    //或者文字布局 text-align="center"
+    private static int getAlign(boolean isTextAlign, String s, int start) {
+        if (isTextAlign) {
+            start = getValidStrPos(s, start, "text-align", 15);
+        } else {
+            start = getValidStrPos(s, start, "align", 10);
+        }
 
-            if (s.startsWith("right", i)) {
+        if (start > 0) {
+            while (start < s.length() && (s.charAt(start) < 'a' || s.charAt(start) > 'z')) {
+                start++;
+            }
+            if (s.startsWith("right", start)) {
                 return HtmlNode.ALIGN_RIGHT;
-            } else if (s.startsWith("center", i)) {
+            } else if (s.startsWith("center", start)) {
                 return HtmlNode.ALIGN_CENTER;
-            } else if (s.startsWith("left", i)) {
+            } else if (s.startsWith("left", start)) {
                 return HtmlNode.ALIGN_LEFT;
             }
         }
@@ -85,7 +130,6 @@ public class AttrParser {
     //attr css
     private static int getTextColor(String s, int start) {
         int j = getValidStrPos(s, start, "color", 10);
-        Log.d("====", s + "|" + start + "|" + j);
         if (j < 0) return COLOR_NONE;
         //color 排除background-color bgcolor
         if (j > start + 5 && ((s.charAt(j - 6) == '-') || (s.charAt(j - 6) == 'g'))) {

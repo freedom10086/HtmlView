@@ -184,7 +184,6 @@ public class HtmlParser {
             if (bufPos >= 5) {
                 attr = AttrParser.parserAttr(type, buf, bufPos);
             }
-
             HtmlNode n = new HtmlNode(type, name, attr);
             pushNode(n);
             handler.startElement(n);

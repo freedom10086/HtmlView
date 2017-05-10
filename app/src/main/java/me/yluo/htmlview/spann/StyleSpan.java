@@ -1,10 +1,13 @@
 package me.yluo.htmlview.spann;
 
+import android.graphics.Paint;
+import android.text.Layout;
 import android.text.TextPaint;
 import android.text.style.CharacterStyle;
 import android.text.style.UpdateAppearance;
 
 import me.yluo.htmlview.AttrParser;
+import me.yluo.htmlview.HtmlNode;
 
 //如果值为-1代表没有
 // TODO: 2017/3/2 支持更多的style
@@ -40,6 +43,5 @@ public class StyleSpan extends CharacterStyle
             }
             tp.setTextSize(tp.getTextSize() * TEXT_SIZE[fontSize - 1]);
         }
-
     }
 }
